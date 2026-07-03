@@ -8,12 +8,15 @@ set -e
 DBPW="${1:?사용법: sudo bash deploy/setup_db.sh <DB비밀번호>}"
 APP=/var/www/bukdoo
 
-# root 접속 방식 자동 판별
+# root 접속 방식 자동 판별: ① 소켓 ② debian-sys-maint ③ root 비번 입력
 if mariadb -e "SELECT 1" >/dev/null 2>&1; then
   ROOT="mariadb"
   echo "[정보] MariaDB root 소켓접속 OK"
+elif [ -r /etc/mysql/debian.cnf ] && mariadb --defaults-file=/etc/mysql/debian.cnf -e "SELECT 1" >/dev/null 2>&1; then
+  ROOT="mariadb --defaults-file=/etc/mysql/debian.cnf"
+  echo "[정보] debian-sys-maint 관리자 계정으로 접속 (비번 불필요)"
 else
-  echo "[정보] root 소켓접속 불가 → MariaDB root 비밀번호로 접속합니다 (아래에 입력)"
+  echo "[정보] 소켓/디비안 계정 모두 불가 → MariaDB root 비밀번호로 접속합니다 (아래에 입력)"
   ROOT="mariadb -u root -p"
 fi
 
