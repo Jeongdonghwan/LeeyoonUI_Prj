@@ -7,8 +7,9 @@ import Layout from './components/layout/Layout';
 import Login from './pages/Login';
 import Notice from './pages/Notice';
 import AccountManage from './pages/AccountManage';
-import SlotManage from './pages/SlotManage';
-import SlotView from './pages/SlotView';
+import CampaignManage from './pages/CampaignManage';
+import ProductCampaign from './pages/ProductCampaign';
+import CampaignDetail from './pages/CampaignDetail';
 import LogManage from './pages/LogManage';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
@@ -18,7 +19,7 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
 
 function RoleRoute({ children, roles }: { children: React.ReactNode; roles: string[] }) {
   const user = useAuthStore((s) => s.user);
-  if (!user || !roles.includes(user.role)) return <Navigate to="/slots" replace />;
+  if (!user || !roles.includes(user.role)) return <Navigate to="/campaigns" replace />;
   return <>{children}</>;
 }
 
@@ -30,14 +31,17 @@ export default function App() {
     axios.post('/api/auth/refresh', {}, { withCredentials: true })
       .then((res) => {
         const { access_token } = res.data.data;
-        // refresh 응답에 user 정보가 없으므로 토큰 디코딩
+        // sub(id 문자열) + claims(username/role)로 유저 재구성
         const payload = JSON.parse(atob(access_token.split('.')[1]));
-        const user = payload.sub;
+        const user = {
+          id: Number(payload.sub),
+          username: payload.username,
+          role: payload.role,
+          company: payload.company ?? null,
+        };
         useAuthStore.getState().setAuth(access_token, user);
       })
-      .catch(() => {
-        // refresh 실패 시 로그인 페이지로
-      })
+      .catch(() => { /* 미로그인 */ })
       .finally(() => setLoading(false));
   }, []);
 
@@ -52,19 +56,16 @@ export default function App() {
         <Route path="/login" element={<Login />} />
 
         <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
-          <Route index element={<Navigate to="/slots" replace />} />
+          <Route index element={<Navigate to="/campaigns" replace />} />
           <Route path="notice" element={<Notice />} />
           <Route path="accounts" element={
-            <RoleRoute roles={['admin', 'distributor']}>
-              <AccountManage />
-            </RoleRoute>
+            <RoleRoute roles={['admin', 'distributor']}><AccountManage /></RoleRoute>
           } />
-          <Route path="slots" element={<SlotManage />} />
-          <Route path="slots/register" element={<SlotView />} />
+          <Route path="campaigns" element={<CampaignManage />} />
+          <Route path="campaigns/product/:productType" element={<ProductCampaign />} />
+          <Route path="campaigns/:id" element={<CampaignDetail />} />
           <Route path="logs" element={
-            <RoleRoute roles={['admin', 'distributor']}>
-              <LogManage />
-            </RoleRoute>
+            <RoleRoute roles={['admin', 'distributor']}><LogManage /></RoleRoute>
           } />
         </Route>
 

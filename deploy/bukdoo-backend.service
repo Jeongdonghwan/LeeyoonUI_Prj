@@ -1,0 +1,16 @@
+[Unit]
+Description=Bukdoo (북두칠성) Flask backend
+After=network.target mariadb.service
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/bukdoo/backend
+EnvironmentFile=/var/www/bukdoo/backend/.env
+ExecStart=/var/www/bukdoo/backend/venv/bin/gunicorn -c /var/www/bukdoo/backend/gunicorn.conf.py "app:create_app()"
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

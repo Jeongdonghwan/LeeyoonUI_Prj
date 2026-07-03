@@ -52,8 +52,8 @@ const styles: Record<string, React.CSSProperties> = {
     color: '#374151',
   },
   active: {
-    background: '#8B1A2E',
+    background: '#4f6ef7',
     color: '#fff',
-    borderColor: '#8B1A2E',
+    borderColor: '#4f6ef7',
   },
 };

@@ -15,9 +15,9 @@ export default function Layout() {
 const styles: Record<string, React.CSSProperties> = {
   main: {
     flex: 1,
-    marginLeft: 180,
-    padding: '24px 28px',
-    background: '#f3f4f6',
+    marginLeft: 210,
+    padding: '28px 32px',
+    background: '#f4f6fa',
     minHeight: '100vh',
   },
 };

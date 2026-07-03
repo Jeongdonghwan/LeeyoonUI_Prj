@@ -4,8 +4,9 @@ from flask_cors import CORS
 from config import Config
 from routes.auth import auth_bp
 from routes.users import users_bp
-from routes.slots import slots_bp
+from routes.campaigns import campaigns_bp
 from routes.logs import logs_bp
+from routes.notices import notices_bp
 
 
 def create_app():
@@ -57,8 +58,9 @@ def create_app():
     # Blueprint 등록
     app.register_blueprint(auth_bp)
     app.register_blueprint(users_bp)
-    app.register_blueprint(slots_bp)
+    app.register_blueprint(campaigns_bp)
     app.register_blueprint(logs_bp)
+    app.register_blueprint(notices_bp)
 
     # 헬스체크
     @app.route('/api/health')

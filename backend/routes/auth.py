@@ -3,11 +3,11 @@ from flask_jwt_extended import (
     create_access_token,
     create_refresh_token,
     jwt_required,
-    get_jwt_identity,
     set_refresh_cookies,
     unset_jwt_cookies
 )
 from models.user import UserModel
+from utils.jwt_utils import get_current_user
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/api/auth')
 
@@ -34,14 +34,15 @@ def login():
                 'message': '아이디 또는 비밀번호가 올바르지 않습니다.'
             }), 401
 
-        identity = {
-            'id': user['id'],
+        identity = str(user['id'])
+        claims = {
             'username': user['username'],
-            'role': user['role']
+            'role': user['role'],
+            'company': user.get('company'),
         }
 
-        access_token = create_access_token(identity=identity)
-        refresh_token = create_refresh_token(identity=identity)
+        access_token = create_access_token(identity=identity, additional_claims=claims)
+        refresh_token = create_refresh_token(identity=identity, additional_claims=claims)
 
         response = jsonify({
             'success': True,
@@ -72,8 +73,14 @@ def login():
 @jwt_required(refresh=True, locations=['cookies'])
 def refresh():
     try:
-        current_user = get_jwt_identity()
-        new_access_token = create_access_token(identity=current_user)
+        current_user = get_current_user()
+        new_access_token = create_access_token(
+            identity=str(current_user['id']),
+            additional_claims={
+                'username': current_user['username'],
+                'role': current_user['role'],
+            }
+        )
 
         return jsonify({
             'success': True,

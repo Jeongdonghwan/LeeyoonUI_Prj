@@ -4,7 +4,7 @@ import { create } from 'zustand';
 interface AuthUser {
   id: number;
   username: string;
-  role: 'admin' | 'distributor' | 'user';
+  role: 'admin' | 'distributor' | 'agency' | 'user';
   company: string | null;
 }
 

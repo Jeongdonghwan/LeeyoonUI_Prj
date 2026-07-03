@@ -1,5 +1,5 @@
 import api from './axios';
-import type { ApiResponse, User } from '../types';
+import type { ApiResponse, User, ProductType } from '../types';
 
 export const getUsers = (params?: { search?: string; page?: number; per_page?: number }) =>
   api.get<ApiResponse<{ users: User[]; total: number }>>('/users/', { params });
@@ -22,9 +22,9 @@ export const updateUser = (id: number, data: {
 export const deleteUser = (id: number) =>
   api.delete<ApiResponse<null>>(`/users/${id}`);
 
-export const addSlot = (id: number, data: {
+export const addCampaignQuantity = (id: number, data: {
   quantity: number;
-  slot_type?: number;
+  product_type?: ProductType;
   start_date?: string;
   end_date?: string;
-}) => api.post<ApiResponse<null>>(`/users/${id}/add-slot`, data);
+}) => api.post<ApiResponse<null>>(`/users/${id}/add-campaign`, data);

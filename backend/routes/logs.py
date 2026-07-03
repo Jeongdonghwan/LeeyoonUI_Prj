@@ -1,8 +1,7 @@
 from flask import Blueprint, request, jsonify, send_file
-from flask_jwt_extended import get_jwt_identity
 from models.log import LogModel
-from models.slot_change_detail import SlotChangeDetailModel
-from utils.jwt_utils import require_roles
+from models.campaign_change_detail import CampaignChangeDetailModel
+from utils.jwt_utils import require_roles, get_current_user
 from utils.db import get_cursor
 from utils.excel_utils import export_logs_excel
 from datetime import datetime
@@ -42,7 +41,7 @@ def _parse_filters():
 @require_roles('admin', 'distributor')
 def get_logs():
     try:
-        current = get_jwt_identity()
+        current = get_current_user()
         page = int(request.args.get('page', 1))
         per_page = int(request.args.get('per_page', 20))
 
@@ -71,7 +70,7 @@ def get_logs():
 @require_roles('admin', 'distributor')
 def get_stats():
     try:
-        current = get_jwt_identity()
+        current = get_current_user()
         filter_user_id, search_user_ids, start_date, end_date = _parse_filters()
 
         stats = LogModel.get_stats(
@@ -95,7 +94,7 @@ def get_stats():
 @require_roles('admin', 'distributor')
 def excel_export():
     try:
-        current = get_jwt_identity()
+        current = get_current_user()
         filter_user_id, search_user_ids, start_date, end_date = _parse_filters()
 
         logs = LogModel.get_all_for_export(
@@ -110,7 +109,7 @@ def excel_export():
         changes_map = {}
         edit_log_ids = [log['id'] for log in logs if log.get('type') == '수정']
         for log_id in edit_log_ids:
-            details = SlotChangeDetailModel.get_by_log_id(log_id)
+            details = CampaignChangeDetailModel.get_by_log_id(log_id)
             if details:
                 changes_map[log_id] = details
 
@@ -134,7 +133,7 @@ def get_log_details(log_id):
         if not log:
             return jsonify({'error': 'NOT_FOUND', 'message': '로그를 찾을 수 없습니다.'}), 404
 
-        details = SlotChangeDetailModel.get_by_log_id(log_id)
+        details = CampaignChangeDetailModel.get_by_log_id(log_id)
 
         return jsonify({
             'success': True,
