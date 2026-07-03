@@ -19,8 +19,9 @@
 
 ## 1) 코드 배치
 ```bash
-sudo mkdir -p /var/www/bukdoo /var/www/bukdoo/logs
+# git clone 은 빈 디렉터리에만 됨 → clone 먼저, logs 는 그 다음에 생성
 sudo git clone https://github.com/Jeongdonghwan/LeeyoonUI_Prj.git /var/www/bukdoo
+sudo mkdir -p /var/www/bukdoo/logs
 #   (private 저장소면 deploy key 또는 token 사용. 또는 로컬에서 rsync 업로드)
 ```
 
