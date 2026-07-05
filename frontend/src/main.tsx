@@ -25,6 +25,30 @@ globalStyles.textContent = `
   @keyframes bdc-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
   @keyframes bdc-reveal { from { opacity: 0; transform: scale(0.82); } to { opacity: 1; transform: scale(1); } }
   @keyframes bdc-pulse { 0%, 100% { opacity: 0.5; transform: scale(1); } 50% { opacity: 0.9; transform: scale(1.08); } }
+
+  /* ===== 레이아웃 반응형 ===== */
+  .bdc-main { margin-left: 210px; padding: 28px 32px; }
+  .bdc-topbar { display: none; }
+  .bdc-overlay { display: none; }
+  .bdc-statgrid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; }
+  .bdc-login-card { width: 400px; max-width: 92vw; }
+
+  @media (max-width: 900px) {
+    .bdc-main { margin-left: 0; padding: 70px 14px 20px; }
+    .bdc-topbar {
+      display: flex; align-items: center; gap: 12px;
+      position: fixed; top: 0; left: 0; right: 0; height: 54px; z-index: 90;
+      background: #fff; border-bottom: 1px solid #e5e7eb; padding: 0 14px;
+    }
+    .bdc-sidebar { transform: translateX(-100%); transition: transform .25s ease; z-index: 120; }
+    .bdc-sidebar.open { transform: translateX(0); box-shadow: 0 0 40px rgba(0,0,0,.25); }
+    .bdc-overlay.show { display: block; position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 110; }
+    .bdc-statgrid { grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  }
+  @media (max-width: 520px) {
+    .bdc-statgrid { grid-template-columns: repeat(2, 1fr); }
+    .bdc-main { padding: 66px 10px 18px; }
+  }
 `;
 document.head.appendChild(globalStyles);
 

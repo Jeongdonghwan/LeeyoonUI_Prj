@@ -65,3 +65,15 @@ export const IconTrash = ({ size = 15, color = 'currentColor' }: P) => (
     <path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
   </svg>
 );
+
+export const IconMenu = ({ size = 22, color = 'currentColor' }: P) => (
+  <svg {...base(size)} stroke={color} strokeWidth="2" strokeLinecap="round">
+    <path d="M3 6h18M3 12h18M3 18h18" />
+  </svg>
+);
+
+export const IconClose = ({ size = 20, color = 'currentColor' }: P) => (
+  <svg {...base(size)} stroke={color} strokeWidth="2" strokeLinecap="round">
+    <path d="M6 6l12 12M18 6L6 18" />
+  </svg>
+);

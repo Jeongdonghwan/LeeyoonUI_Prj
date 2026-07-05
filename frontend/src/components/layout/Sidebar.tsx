@@ -26,7 +26,7 @@ const topMenus: { path: string; label: string; icon: string; roles: MenuRole[] }
   { path: '/accounts', label: '계정관리', icon: icons.accounts, roles: ['admin', 'distributor'] },
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ open = false, onNavigate }: { open?: boolean; onNavigate?: () => void }) {
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
   const location = useLocation();
@@ -43,7 +43,7 @@ export default function Sidebar() {
   const campaignActive = location.pathname.startsWith('/campaigns');
 
   return (
-    <aside style={styles.sidebar}>
+    <aside className={`bdc-sidebar ${open ? 'open' : ''}`} style={styles.sidebar}>
       <div style={styles.logoArea}>
         <span style={styles.logoIcon}><Icon d={icons.star} size={20} /></span>
         <span style={styles.logoText}>북두칠성</span>
@@ -51,25 +51,25 @@ export default function Sidebar() {
 
       <nav style={styles.nav}>
         {visibleTop.map((m) => (
-          <NavLink key={m.path} to={m.path} style={({ isActive }) => menuStyle(isActive)}>
+          <NavLink key={m.path} to={m.path} onClick={onNavigate} style={({ isActive }) => menuStyle(isActive)}>
             <Icon d={m.icon} /> {m.label}
           </NavLink>
         ))}
 
         {/* 캠페인 관리 + 상품별 하위 메뉴 */}
-        <NavLink to="/campaigns" end style={({ isActive }) => menuStyle(isActive || (campaignActive && location.pathname === '/campaigns'))}>
+        <NavLink to="/campaigns" end onClick={onNavigate} style={({ isActive }) => menuStyle(isActive || (campaignActive && location.pathname === '/campaigns'))}>
           <Icon d={icons.campaign} /> 캠페인 관리
         </NavLink>
         <div style={styles.subGroup}>
           {PRODUCTS.map((pt) => (
-            <NavLink key={pt} to={`/campaigns/product/${pt}`} style={({ isActive }) => subMenuStyle(isActive)}>
+            <NavLink key={pt} to={`/campaigns/product/${pt}`} onClick={onNavigate} style={({ isActive }) => subMenuStyle(isActive)}>
               {PRODUCT_META[pt].label}
             </NavLink>
           ))}
         </div>
 
         {(role === 'admin' || role === 'distributor') && (
-          <NavLink to="/logs" style={({ isActive }) => menuStyle(isActive)}>
+          <NavLink to="/logs" onClick={onNavigate} style={({ isActive }) => menuStyle(isActive)}>
             <Icon d={icons.logs} /> 캠페인 로그
           </NavLink>
         )}

@@ -18,7 +18,7 @@ interface Props {
 
 export default function StatCards({ stats, activeStatus = '', onSelect }: Props) {
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 12, marginBottom: 20 }}>
+    <div className="bdc-statgrid" style={{ marginBottom: 20 }}>
       {CARDS.map((c) => {
         const isActive = c.key === 'total' ? activeStatus === '' : activeStatus === c.status;
         return (
