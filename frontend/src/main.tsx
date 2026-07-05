@@ -28,7 +28,8 @@ globalStyles.textContent = `
   @keyframes bdc-pulse { 0%, 100% { opacity: 0.5; transform: scale(1); } 50% { opacity: 0.9; transform: scale(1.08); } }
 
   /* ===== 레이아웃 반응형 ===== */
-  .bdc-main { margin-left: 210px; padding: 28px 32px; }
+  /* min-width:0 = flex 자식이 넓은 표 때문에 늘어나지 않게 → 안쪽 overflow-x 스크롤 정상 작동 */
+  .bdc-main { margin-left: 210px; padding: 28px 32px; min-width: 0; }
   .bdc-topbar { display: none; }
   .bdc-overlay { display: none; }
   .bdc-statgrid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; }
