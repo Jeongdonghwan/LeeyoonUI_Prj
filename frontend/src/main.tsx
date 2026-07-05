@@ -5,6 +5,7 @@ import App from './App';
 const globalStyles = document.createElement('style');
 globalStyles.textContent = `
   * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { max-width: 100%; overflow-x: hidden; }
   body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Malgun Gothic', sans-serif;
     background: #f4f6fa;
@@ -44,6 +45,11 @@ globalStyles.textContent = `
     .bdc-sidebar.open { transform: translateX(0); box-shadow: 0 0 40px rgba(0,0,0,.25); }
     .bdc-overlay.show { display: block; position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 110; }
     .bdc-statgrid { grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    /* 툴바 입력/셀렉트가 좁은 화면에서 줄어들 수 있게 (가로 스크롤 방지) */
+    .bdc-main input:not([type=checkbox]):not([type=radio]),
+    .bdc-main select { min-width: 0; max-width: 100%; }
+    .bdc-main h2 { font-size: 20px; }
+    .bdc-main table { font-size: 12px; }
   }
   @media (max-width: 520px) {
     .bdc-statgrid { grid-template-columns: repeat(2, 1fr); }

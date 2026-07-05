@@ -113,7 +113,7 @@ const styles: Record<string, React.CSSProperties> = {
   sidebar: {
     width: 210, minHeight: '100vh', background: colors.sidebarBg,
     borderRight: `1px solid ${colors.border}`,
-    display: 'flex', flexDirection: 'column', position: 'fixed', left: 0, top: 0, zIndex: 100,
+    display: 'flex', flexDirection: 'column', position: 'fixed', left: 0, top: 0, zIndex: 120,
   },
   logoArea: {
     display: 'flex', alignItems: 'center', gap: 9, padding: '20px 18px',

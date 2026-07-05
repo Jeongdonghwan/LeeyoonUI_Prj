@@ -36,9 +36,10 @@ const styles: Record<string, React.CSSProperties> = {
   modal: {
     background: '#fff',
     borderRadius: 12,
-    padding: 28,
-    minWidth: 420,
-    maxWidth: 560,
+    padding: 24,
+    width: 'min(560px, 92vw)',
+    maxHeight: '88vh',
+    overflowY: 'auto',
   },
   header: {
     display: 'flex',
