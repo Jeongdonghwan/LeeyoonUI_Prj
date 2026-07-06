@@ -55,7 +55,7 @@ export const PRODUCT_META: Record<ProductType, {
 }> = {
   bdc1: { label: '북두칠성1', format: 'A', runTime: '익일 구동', minPeriod: '7일(최소구동일자)', minTa: '100타' },
   bdc2: { label: '북두칠성2', format: 'B', runTime: '익일 구동', minPeriod: '7일(최소구동일자)', minTa: '100타' },
-  bdc3: { label: '북두칠성3', format: 'A', runTime: '익일 가능', minPeriod: '7일(최소구동일자)', minTa: '100타' },
+  bdc3: { label: '북두칠성3', format: 'A', runTime: '익일 구동', minPeriod: '7일(최소구동일자)', minTa: '100타' },
 };
 export const PRODUCTS: ProductType[] = ['bdc1', 'bdc2', 'bdc3'];
 

@@ -10,7 +10,7 @@ from datetime import datetime, date, timedelta
 # ============================================================
 PRODUCTS = {
     'bdc1': {'title': '북 두 칠 성 1', 'label': '북두칠성1', 'run_time': '익일 구동', 'format': 'A'},
-    'bdc3': {'title': '북 두 칠 성 3', 'label': '북두칠성3', 'run_time': '익일 가능', 'format': 'A'},
+    'bdc3': {'title': '북 두 칠 성 3', 'label': '북두칠성3', 'run_time': '익일 구동', 'format': 'A'},
     'bdc2': {'title': '북두칠성 2', 'label': '북두칠성2', 'run_time': '익일 구동', 'format': 'B'},
 }
 

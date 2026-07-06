@@ -143,6 +143,10 @@ export default function ProductCampaign() {
     // 북두칠성2(일자별)는 7일 고정, 북두칠성1·3은 최소 7일(1일 단위)
     const runDays = isA ? (Number(form.run_days) || 0) : MIN_RUN_DAYS;
     if (isA && runDays < MIN_RUN_DAYS) return toast.error(`구동일수는 최소 ${MIN_RUN_DAYS}일 이상이어야 합니다.`);
+    // 북두칠성2: 일자별 작업량은 각 100타 이상
+    if (!isA && form.days.some((d) => (Number(d.ta) || 0) < 100)) {
+      return toast.error('일자별 작업량은 각 100타 이상 입력해주세요.');
+    }
 
     const base: Partial<Campaign> = {
       user_id: Number(form.user_id), product_type: pt,
@@ -403,7 +407,7 @@ export default function ProductCampaign() {
                 {form.days.map((d, i) => (
                   <div key={d.day_no} style={{ textAlign: 'center' }}>
                     <div style={{ fontSize: 11, color: colors.textMuted, marginBottom: 3 }}>D-{d.day_no}</div>
-                    <input type="number" style={{ ...inputStyle, padding: '6px 4px', textAlign: 'center' }} value={d.ta}
+                    <input type="number" min={100} step={10} placeholder="100+" style={{ ...inputStyle, padding: '6px 4px', textAlign: 'center' }} value={d.ta}
                       onChange={(e) => { const days = [...form.days]; days[i] = { ...d, ta: e.target.value ? Number(e.target.value) : '' }; setForm({ ...form, days }); }} />
                   </div>
                 ))}
