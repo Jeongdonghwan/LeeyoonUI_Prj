@@ -32,7 +32,7 @@ function addDays(dateStr: string, n: number) {
 
 export default function ProductCampaign() {
   const { productType } = useParams<{ productType: string }>();
-  const pt = (['bdc1', 'bdc2', 'bdc3'].includes(productType || '') ? productType : 'bdc1') as ProductType;
+  const pt = (['bdc1', 'bdc2', 'bdc3', 'bdcnav'].includes(productType || '') ? productType : 'bdc1') as ProductType;
   const meta = PRODUCT_META[pt];
   const isA = meta.format === 'A';
   const navigate = useNavigate();

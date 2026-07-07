@@ -48,7 +48,7 @@ export const STATUS_META: Record<string, { label: string; bg: string; fg: string
 };
 
 // --------------------------------------------- 상품(북두칠성1/2/3) 메타
-export type ProductType = 'bdc1' | 'bdc2' | 'bdc3';
+export type ProductType = 'bdc1' | 'bdc2' | 'bdc3' | 'bdcnav';
 export const PRODUCT_META: Record<ProductType, {
   label: string; format: 'A' | 'B'; runTime: string;
   minPeriod: string; minTa: string;
@@ -56,8 +56,9 @@ export const PRODUCT_META: Record<ProductType, {
   bdc1: { label: '북두칠성1', format: 'A', runTime: '익일 구동', minPeriod: '7일(최소구동일자)', minTa: '100타' },
   bdc2: { label: '북두칠성2', format: 'B', runTime: '익일 구동', minPeriod: '7일(최소구동일자)', minTa: '100타' },
   bdc3: { label: '북두칠성3', format: 'A', runTime: '익일 구동', minPeriod: '7일(최소구동일자)', minTa: '100타' },
+  bdcnav: { label: '북두칠성 길찾기', format: 'B', runTime: '익일 구동', minPeriod: '7일(최소구동일자)', minTa: '100타' },
 };
-export const PRODUCTS: ProductType[] = ['bdc1', 'bdc2', 'bdc3'];
+export const PRODUCTS: ProductType[] = ['bdc1', 'bdc2', 'bdc3', 'bdcnav'];
 
 // --------------------------------------------- 공유 스타일
 export const cardStyle: CSSProperties = {

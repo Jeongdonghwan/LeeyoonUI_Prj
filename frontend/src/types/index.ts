@@ -1,5 +1,5 @@
 export type Role = 'admin' | 'distributor' | 'agency' | 'user';
-export type ProductType = 'bdc1' | 'bdc2' | 'bdc3';
+export type ProductType = 'bdc1' | 'bdc2' | 'bdc3' | 'bdcnav';
 export type CampaignStatus = 'pending' | 'active' | 'error' | 'expired';
 
 export interface User {

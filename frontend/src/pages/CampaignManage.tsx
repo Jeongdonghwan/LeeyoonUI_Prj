@@ -71,7 +71,7 @@ export default function CampaignManage() {
             <select value={productFilter} onChange={(e) => { setProductFilter(e.target.value as ProductType | ''); setPage(1); }}
               style={{ ...inputStyle, width: 140 }}>
               <option value="">전체 상품</option>
-              {(['bdc1', 'bdc2', 'bdc3'] as ProductType[]).map((p) => <option key={p} value={p}>{PRODUCT_META[p].label}</option>)}
+              {(['bdc1', 'bdc2', 'bdc3', 'bdcnav'] as ProductType[]).map((p) => <option key={p} value={p}>{PRODUCT_META[p].label}</option>)}
             </select>
             <input style={{ ...inputStyle, width: 240 }} placeholder="업체명 / 키워드 / 아이디 검색"
               value={search} onChange={(e) => setSearch(e.target.value)}

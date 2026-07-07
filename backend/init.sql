@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS campaigns (
   id            INT AUTO_INCREMENT PRIMARY KEY,
   user_id       INT NOT NULL,
   created_by    INT NOT NULL,
-  product_type  ENUM('bdc1', 'bdc2', 'bdc3') NOT NULL DEFAULT 'bdc1',
+  product_type  ENUM('bdc1', 'bdc2', 'bdc3', 'bdcnav') NOT NULL DEFAULT 'bdc1',
   status        ENUM('pending', 'active', 'error', 'expired') NOT NULL DEFAULT 'pending',
   place_name    VARCHAR(255) NULL,       -- 플레이스 업체명 / 업체명
   keyword_main  VARCHAR(255) NULL,       -- 메인키워드
@@ -62,7 +62,7 @@ CREATE TABLE IF NOT EXISTS campaign_logs (
   user_id        INT NOT NULL,           -- 캠페인 소유자
   campaign_id    INT NULL,
   modified_by    INT NULL,               -- 작업 수행자
-  product_type   ENUM('bdc1', 'bdc2', 'bdc3') NULL,
+  product_type   ENUM('bdc1', 'bdc2', 'bdc3', 'bdcnav') NULL,
   total_ta       INT NOT NULL DEFAULT 0, -- 총타수
   period_days    INT NOT NULL DEFAULT 0, -- 구동일수
   created_at     DATETIME DEFAULT CURRENT_TIMESTAMP,
