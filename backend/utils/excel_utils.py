@@ -175,7 +175,8 @@ def parse_campaign_excel(file_bytes, product_type, user_id, created_by):
                 continue
             keyword = row[1] if len(row) > 1 else None
             place = row[2] if len(row) > 2 else None
-            if keyword and str(keyword).startswith('예시'):
+            # 양식의 기본 예시행(예시1/예시2)만 건너뜀 — 실제 데이터는 그대로 등록
+            if str(keyword) == '예시1' and str(place) == '예시2':
                 continue
             if not place and not keyword:
                 continue
