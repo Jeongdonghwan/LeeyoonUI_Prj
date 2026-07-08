@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
   getCampaigns, getCampaign, getCampaignStats, createCampaign, updateCampaign, bulkUpdateCampaigns,
-  deleteCampaign, approveCampaign, setCampaignStatus, downloadCampaignTemplate, exportCampaigns, uploadCampaignExcel, saveBlob,
+  deleteCampaign, setCampaignStatus, downloadCampaignTemplate, exportCampaigns, uploadCampaignExcel, saveBlob,
 } from '../api/campaigns';
 import { getUsers } from '../api/users';
 import type { Campaign, CampaignStats, User } from '../types';
@@ -16,7 +16,7 @@ import StatusBadge from '../components/common/StatusBadge';
 import StatCards from '../components/common/StatCards';
 import Pagination from '../components/common/Pagination';
 import Modal from '../components/common/Modal';
-import { IconCheck, IconPlus } from '../components/common/icons';
+import { IconPlus } from '../components/common/icons';
 import { displayStatus, hasIncompleteJamo, isValidPlaceUrl } from '../utils/campaignStatus';
 
 const MIN_RUN_DAYS = 7;
@@ -201,12 +201,12 @@ export default function ProductCampaign() {
   const toggle = (id: number) => setSelected((p) => p.includes(id) ? p.filter((v) => v !== id) : [...p, id]);
   const toggleAll = () => setSelected(selected.length === rows.length ? [] : rows.map((r) => r.id));
 
-  const bulkApprove = async () => {
-    const targets = rows.filter((r) => selected.includes(r.id) && r.status === 'pending').map((r) => r.id);
-    if (!targets.length) return toast.error('승인할 대기 캠페인이 없습니다.');
-    if (!confirm(`${targets.length}건을 일괄 승인할까요?`)) return;
-    await Promise.all(targets.map((id) => approveCampaign(id)));
-    toast.success(`${targets.length}건 승인 완료`);
+  const bulkSetStatus = async (status: string) => {
+    if (!selected.length) return;
+    const label = STATUS_SELECT_OPTIONS.find((o) => o.value === status)?.label || status;
+    if (!confirm(`${selected.length}건을 '${label}' 상태로 변경할까요?`)) return;
+    await Promise.all(selected.map((id) => setCampaignStatus(id, status)));
+    toast.success(`${selected.length}건 상태 변경 완료`);
     load();
   };
   const bulkDelete = async () => {
@@ -292,7 +292,13 @@ export default function ProductCampaign() {
         {canManage && selected.length > 0 && (
           <div style={styles.bulkBar}>
             <span style={{ fontSize: 13, fontWeight: 600, color: colors.primary }}>{selected.length}건 선택</span>
-            {isAdmin && <button style={{ ...btnPrimary, padding: '6px 12px', fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 4 }} onClick={bulkApprove}><IconCheck size={12} color="#fff" /> 일괄 승인</button>}
+            {isAdmin && (
+              <select defaultValue="" onChange={(e) => { const v = e.target.value; e.currentTarget.value = ''; if (v) bulkSetStatus(v); }}
+                style={{ ...inputStyle, width: 140, padding: '6px 8px', fontSize: 12 }}>
+                <option value="">상태 일괄변경 ▾</option>
+                {STATUS_SELECT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}(으)로</option>)}
+              </select>
+            )}
             <button style={{ ...btnSecondary, padding: '6px 12px', fontSize: 12 }} onClick={openBulkEdit}>일괄 수정</button>
             <button style={{ ...btnDanger, padding: '6px 12px', fontSize: 12 }} onClick={bulkDelete}>일괄 삭제</button>
           </div>
