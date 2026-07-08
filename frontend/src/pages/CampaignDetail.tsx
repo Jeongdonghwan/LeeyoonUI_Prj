@@ -1,11 +1,10 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getCampaign, getCampaignHistory, approveCampaign } from '../api/campaigns';
+import { getCampaign, getCampaignHistory, setCampaignStatus } from '../api/campaigns';
 import type { Campaign, CampaignHistoryLog } from '../types';
 import { useAuthStore } from '../store/authStore';
-import { colors, cardStyle, thStyle, tdStyle, btnSecondary, btnPrimary, badgeBase, PRODUCT_META } from '../styles/theme';
+import { colors, cardStyle, thStyle, tdStyle, inputStyle, btnSecondary, badgeBase, PRODUCT_META, STATUS_SELECT_OPTIONS } from '../styles/theme';
 import StatusBadge from '../components/common/StatusBadge';
-import { IconCheck } from '../components/common/icons';
 import toast from 'react-hot-toast';
 
 export default function CampaignDetail() {
@@ -25,10 +24,10 @@ export default function CampaignDetail() {
 
   useEffect(() => { load(); }, [load]);
 
-  const handleApprove = async () => {
+  const handleStatus = async (status: string) => {
     if (!c) return;
-    await approveCampaign(c.id);
-    toast.success('승인되었습니다.');
+    await setCampaignStatus(c.id, status);
+    toast.success('상태가 변경되었습니다.');
     load();
   };
 
@@ -61,10 +60,13 @@ export default function CampaignDetail() {
         <h2 style={{ fontSize: 20, fontWeight: 700, color: colors.text }}>캠페인 상세 #{c.id}</h2>
         <span style={{ ...badgeBase, background: colors.primarySoft, color: colors.primary }}>{meta.label}</span>
         <StatusBadge status={c.status} />
-        {isAdmin && c.status === 'pending' && (
-          <button style={{ ...btnPrimary, marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: 6 }} onClick={handleApprove}>
-            <IconCheck size={14} color="#fff" /> 승인
-          </button>
+        {isAdmin && (
+          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 13, color: colors.textMuted }}>상태변경</span>
+            <select value={c.status} onChange={(e) => handleStatus(e.target.value)} style={{ ...inputStyle, width: 110 }}>
+              {STATUS_SELECT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+          </div>
         )}
       </div>
 

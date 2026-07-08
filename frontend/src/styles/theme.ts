@@ -39,6 +39,12 @@ export const ROLE_META: Record<Role, { label: string; bg: string; fg: string }> 
 
 // --------------------------------------------- 상태 메타
 export type CampaignStatus = 'pending' | 'active' | 'error' | 'expired';
+// 관리자가 수동으로 지정 가능한 상태 (오류 제외)
+export const STATUS_SELECT_OPTIONS: { value: CampaignStatus; label: string }[] = [
+  { value: 'active', label: '정상' },
+  { value: 'pending', label: '대기' },
+  { value: 'expired', label: '종료' },
+];
 export const STATUS_META: Record<string, { label: string; bg: string; fg: string; dot: string }> = {
   active:      { label: '정상',   bg: '#dcfce7', fg: '#166534', dot: '#16a34a' },
   error:       { label: '오류',   bg: '#fee2e2', fg: '#991b1b', dot: '#dc2626' },

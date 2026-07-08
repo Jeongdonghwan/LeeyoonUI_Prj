@@ -36,6 +36,9 @@ export const deleteCampaign = (id: number) =>
 export const approveCampaign = (id: number) =>
   api.put<ApiResponse<{ id: number }>>(`/campaigns/${id}/approve`);
 
+export const setCampaignStatus = (id: number, status: string) =>
+  api.put<ApiResponse<{ id: number }>>(`/campaigns/${id}/status`, { status });
+
 export const getCampaignHistory = (id: number) =>
   api.get<ApiResponse<{ logs: CampaignHistoryLog[] }>>(`/campaigns/${id}/history`);
 

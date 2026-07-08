@@ -3,14 +3,14 @@ import { useParams, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
   getCampaigns, getCampaign, getCampaignStats, createCampaign, updateCampaign, bulkUpdateCampaigns,
-  deleteCampaign, approveCampaign, downloadCampaignTemplate, exportCampaigns, uploadCampaignExcel, saveBlob,
+  deleteCampaign, approveCampaign, setCampaignStatus, downloadCampaignTemplate, exportCampaigns, uploadCampaignExcel, saveBlob,
 } from '../api/campaigns';
 import { getUsers } from '../api/users';
 import type { Campaign, CampaignStats, User } from '../types';
 import { useAuthStore } from '../store/authStore';
 import {
   colors, cardStyle, thStyle, tdStyle, inputStyle, labelStyle, fieldStyle,
-  btnPrimary, btnSecondary, btnDanger, PRODUCT_META, type ProductType,
+  btnPrimary, btnSecondary, btnDanger, PRODUCT_META, STATUS_SELECT_OPTIONS, type ProductType,
 } from '../styles/theme';
 import StatusBadge from '../components/common/StatusBadge';
 import StatCards from '../components/common/StatCards';
@@ -191,9 +191,9 @@ export default function ProductCampaign() {
     toast.success('삭제되었습니다.');
     load();
   };
-  const handleApprove = async (id: number) => {
-    await approveCampaign(id);
-    toast.success('승인되었습니다.');
+  const handleStatus = async (id: number, status: string) => {
+    await setCampaignStatus(id, status);
+    toast.success('상태가 변경되었습니다.');
     load();
   };
 
@@ -340,11 +340,12 @@ export default function ProductCampaign() {
                     </>
                   )}
                   <td style={tdStyle}>
-                    <div style={{ display: 'flex', gap: 6 }}>
-                      {isAdmin && c.status === 'pending' && (
-                        <button style={{ ...btnPrimary, padding: '3px 10px', fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 4 }} onClick={() => handleApprove(c.id)}>
-                          <IconCheck size={12} color="#fff" /> 승인
-                        </button>
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                      {isAdmin && (
+                        <select value={c.status} onChange={(e) => handleStatus(c.id, e.target.value)}
+                          style={{ ...inputStyle, width: 78, padding: '4px 6px', fontSize: 12 }} title="상태 변경">
+                          {STATUS_SELECT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                        </select>
                       )}
                       <button style={{ ...btnSecondary, padding: '3px 10px', fontSize: 12 }} onClick={() => openEdit(c)}>수정</button>
                       {canManage && <button style={{ ...btnDanger, padding: '3px 10px', fontSize: 12 }} onClick={() => handleDelete(c.id)}>삭제</button>}

@@ -1,13 +1,13 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getCampaigns, getCampaignStats, approveCampaign } from '../api/campaigns';
+import { getCampaigns, getCampaignStats, setCampaignStatus } from '../api/campaigns';
 import type { Campaign, CampaignStats } from '../types';
 import { useAuthStore } from '../store/authStore';
-import { colors, cardStyle, thStyle, tdStyle, inputStyle, btnPrimary, btnSecondary, badgeBase, PRODUCT_META, type ProductType } from '../styles/theme';
+import { colors, cardStyle, thStyle, tdStyle, inputStyle, btnPrimary, btnSecondary, badgeBase, PRODUCT_META, STATUS_SELECT_OPTIONS, type ProductType } from '../styles/theme';
 import StatusBadge from '../components/common/StatusBadge';
 import StatCards from '../components/common/StatCards';
 import Pagination from '../components/common/Pagination';
-import { IconInbox, IconCheck } from '../components/common/icons';
+import { IconInbox } from '../components/common/icons';
 import { displayStatus } from '../utils/campaignStatus';
 import toast from 'react-hot-toast';
 import { differenceInCalendarDays, parseISO } from 'date-fns';
@@ -48,10 +48,9 @@ export default function CampaignManage() {
 
   useEffect(() => { load(); }, [load]);
 
-  const handleApprove = async (id: number, e: React.MouseEvent) => {
-    e.stopPropagation();
-    await approveCampaign(id);
-    toast.success('승인되었습니다.');
+  const handleStatus = async (id: number, status: string) => {
+    await setCampaignStatus(id, status);
+    toast.success('상태가 변경되었습니다.');
     load();
   };
 
@@ -87,7 +86,7 @@ export default function CampaignManage() {
           <table style={styles.table}>
             <thead>
               <tr>
-                {['번호', '상품', '상태', '아이디', '업체명', '메인키워드', '총타수', '시작일', '종료일', '남은일수', '등록일'].concat(isAdmin ? ['승인'] : []).map((h) => (
+                {['번호', '상품', '상태', '아이디', '업체명', '메인키워드', '총타수', '시작일', '종료일', '남은일수', '등록일'].concat(isAdmin ? ['상태변경'] : []).map((h) => (
                   <th key={h} style={thStyle}>{h}</th>
                 ))}
               </tr>
@@ -115,9 +114,10 @@ export default function CampaignManage() {
                   <td style={tdStyle}>{c.created_at?.slice(0, 10)}</td>
                   {isAdmin && (
                     <td style={tdStyle} onClick={(e) => e.stopPropagation()}>
-                      {c.status === 'pending'
-                        ? <button style={{ ...btnPrimary, padding: '3px 10px', fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 4 }} onClick={(e) => handleApprove(c.id, e)}><IconCheck size={12} color="#fff" /> 승인</button>
-                        : <span style={{ color: colors.textFaint }}>-</span>}
+                      <select value={c.status} onChange={(e) => handleStatus(c.id, e.target.value)}
+                        style={{ ...inputStyle, width: 78, padding: '4px 6px', fontSize: 12 }} title="상태 변경">
+                        {STATUS_SELECT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                      </select>
                     </td>
                   )}
                 </tr>

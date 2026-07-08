@@ -378,6 +378,43 @@ def approve_campaign(campaign_id):
         return jsonify({'error': 'INTERNAL_ERROR', 'message': str(e)}), 500
 
 
+STATUS_SETTABLE = {'active', 'pending', 'expired'}  # 관리자 수동 상태변경 허용값(오류 제외)
+
+
+@campaigns_bp.route('/<int:campaign_id>/status', methods=['PUT'])
+@require_roles('admin')
+def set_campaign_status(campaign_id):
+    """관리자 상태 변경: 정상(active)/대기(pending)/종료(expired)"""
+    try:
+        current = get_current_user()
+        c = CampaignModel.find_by_id(campaign_id)
+        if not c:
+            return jsonify({'error': 'NOT_FOUND', 'message': '캠페인을 찾을 수 없습니다.'}), 404
+        new_status = (request.get_json() or {}).get('status')
+        if new_status not in STATUS_SETTABLE:
+            return jsonify({'error': 'VALIDATION_ERROR', 'message': '허용되지 않은 상태입니다.'}), 400
+        old = c.get('status')
+        if old == new_status:
+            return jsonify({'success': True, 'data': {'id': campaign_id}, 'message': '변경 없음'})
+
+        CampaignModel.update(campaign_id, {'status': new_status})
+        with get_cursor() as (cursor, conn):
+            cursor.execute(
+                "INSERT INTO campaign_logs (type, user_id, campaign_id, modified_by, product_type, total_ta, period_days) "
+                "VALUES (%s, %s, %s, %s, %s, %s, %s)",
+                ('수정', c['user_id'], campaign_id, current['id'], c.get('product_type'),
+                 c.get('total_ta') or 0, c.get('run_days') or 0)
+            )
+            log_id = cursor.lastrowid
+            conn.commit()
+        CampaignChangeDetailModel.create_batch(log_id, campaign_id, [
+            {'field_name': 'status', 'old_value': old, 'new_value': new_status}
+        ])
+        return jsonify({'success': True, 'data': {'id': campaign_id}, 'message': '상태가 변경되었습니다.'})
+    except Exception as e:
+        return jsonify({'error': 'INTERNAL_ERROR', 'message': str(e)}), 500
+
+
 @campaigns_bp.route('/<int:campaign_id>/history', methods=['GET'])
 @require_roles('admin', 'distributor', 'agency', 'user')
 def campaign_history(campaign_id):
