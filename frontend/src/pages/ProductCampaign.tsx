@@ -37,8 +37,9 @@ export default function ProductCampaign() {
   const isA = meta.format === 'A';
   const navigate = useNavigate();
   const { user } = useAuthStore();
-  const canManage = user?.role === 'admin' || user?.role === 'distributor';
-  const isAdmin = user?.role === 'admin';
+  const canManage = user?.role === 'admin' || user?.role === 'distributor';  // 삭제·일괄·소유자선택
+  const isAdmin = user?.role === 'admin';                                     // 승인
+  const isLeaf = user?.role === 'agency' || user?.role === 'user';            // 광고주·대행사(본인 것만)
 
   const [rows, setRows] = useState<Campaign[]>([]);
   const [total, setTotal] = useState(0);
@@ -104,7 +105,7 @@ export default function ProductCampaign() {
     return form.days.reduce((s, d) => s + (Number(d.ta) || 0), 0);
   }, [isA, form]);
 
-  const openReg = () => { setForm(blankForm()); setEditId(null); setRegOpen(true); };
+  const openReg = () => { setForm({ ...blankForm(), user_id: isLeaf ? (user?.id ?? '') : '' }); setEditId(null); setRegOpen(true); };
   const closeReg = () => { setRegOpen(false); setEditId(null); };
 
   const openEdit = async (c: Campaign) => {
@@ -244,10 +245,11 @@ export default function ProductCampaign() {
   const handleTemplate = async () => { const res = await downloadCampaignTemplate(pt); saveBlob(res.data, `${meta.label}_양식.xlsx`); };
   const handleExport = async () => { const res = await exportCampaigns(pt); saveBlob(res.data, `${meta.label}_목록.xlsx`); };
   const submitUpload = async () => {
-    if (!uploadUser) return toast.error('광고주를 선택해주세요.');
+    const targetUser = isLeaf ? user?.id : (uploadUser || null);
+    if (!targetUser) return toast.error('광고주를 선택해주세요.');
     if (!uploadFile) return toast.error('엑셀 파일을 선택해주세요.');
     try {
-      const res = await uploadCampaignExcel(uploadFile, pt, Number(uploadUser));
+      const res = await uploadCampaignExcel(uploadFile, pt, Number(targetUser));
       const { updated, errors } = res.data.data;
       toast.success(`${updated}건 등록 완료${errors.length ? `, ${errors.length}건 실패` : ''}`);
       setUploadOpen(false); setUploadFile(null); setUploadUser('');
@@ -281,8 +283,8 @@ export default function ProductCampaign() {
           <div style={{ display: 'flex', gap: 8 }}>
             <button style={btnSecondary} onClick={handleTemplate}>엑셀 양식</button>
             <button style={btnSecondary} onClick={handleExport}>엑셀 다운로드</button>
-            {canManage && <button style={btnSecondary} onClick={() => setUploadOpen(true)}>엑셀 업로드</button>}
-            {canManage && <button style={{ ...btnPrimary, display: 'inline-flex', alignItems: 'center', gap: 5 }} onClick={openReg}><IconPlus size={13} color="#fff" /> 캠페인 등록</button>}
+            <button style={btnSecondary} onClick={() => setUploadOpen(true)}>엑셀 업로드</button>
+            <button style={{ ...btnPrimary, display: 'inline-flex', alignItems: 'center', gap: 5 }} onClick={openReg}><IconPlus size={13} color="#fff" /> 캠페인 등록</button>
           </div>
         </div>
 
@@ -303,7 +305,7 @@ export default function ProductCampaign() {
               {(isA
                 ? ['번호', '상태', '아이디', '구동시작일', '업체명', '메인키워드', 'URL', '일타수', '구동일수', '총타수', '종료일']
                 : ['번호', '상태', '아이디', '접수일', '메인키워드', '업체명', '링크', '시작일', '만료일', '총작업량']
-              ).concat(canManage ? ['관리'] : []).map((h) => <th key={h} style={thStyle}>{h}</th>)}
+              ).concat(['관리']).map((h) => <th key={h} style={thStyle}>{h}</th>)}
             </tr></thead>
             <tbody>
               {rows.length === 0 && (
@@ -337,19 +339,17 @@ export default function ProductCampaign() {
                       <td style={{ ...tdStyle, fontWeight: 600 }}>{(c.total_ta ?? 0).toLocaleString()}</td>
                     </>
                   )}
-                  {canManage && (
-                    <td style={tdStyle}>
-                      <div style={{ display: 'flex', gap: 6 }}>
-                        {isAdmin && c.status === 'pending' && (
-                          <button style={{ ...btnPrimary, padding: '3px 10px', fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 4 }} onClick={() => handleApprove(c.id)}>
-                            <IconCheck size={12} color="#fff" /> 승인
-                          </button>
-                        )}
-                        <button style={{ ...btnSecondary, padding: '3px 10px', fontSize: 12 }} onClick={() => openEdit(c)}>수정</button>
-                        <button style={{ ...btnDanger, padding: '3px 10px', fontSize: 12 }} onClick={() => handleDelete(c.id)}>삭제</button>
-                      </div>
-                    </td>
-                  )}
+                  <td style={tdStyle}>
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      {isAdmin && c.status === 'pending' && (
+                        <button style={{ ...btnPrimary, padding: '3px 10px', fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 4 }} onClick={() => handleApprove(c.id)}>
+                          <IconCheck size={12} color="#fff" /> 승인
+                        </button>
+                      )}
+                      <button style={{ ...btnSecondary, padding: '3px 10px', fontSize: 12 }} onClick={() => openEdit(c)}>수정</button>
+                      {canManage && <button style={{ ...btnDanger, padding: '3px 10px', fontSize: 12 }} onClick={() => handleDelete(c.id)}>삭제</button>}
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -364,14 +364,16 @@ export default function ProductCampaign() {
 
       {/* 등록/수정 모달 */}
       <Modal open={regOpen} onClose={closeReg} title={`${meta.label} 캠페인 ${editId ? '수정' : '등록'}`}>
-        <div style={fieldStyle}>
-          <label style={labelStyle}>광고주 <span style={{ color: colors.danger }}>*</span></label>
-          <select style={{ ...inputStyle, background: editId ? colors.surfaceAlt : '#fff' }} value={form.user_id} disabled={!!editId}
-            onChange={(e) => setForm({ ...form, user_id: e.target.value ? Number(e.target.value) : '' })}>
-            <option value="">광고주 선택</option>
-            {owners.map((o) => <option key={o.id} value={o.id}>{o.username} ({o.company || o.role})</option>)}
-          </select>
-        </div>
+        {canManage && (
+          <div style={fieldStyle}>
+            <label style={labelStyle}>광고주 <span style={{ color: colors.danger }}>*</span></label>
+            <select style={{ ...inputStyle, background: editId ? colors.surfaceAlt : '#fff' }} value={form.user_id} disabled={!!editId}
+              onChange={(e) => setForm({ ...form, user_id: e.target.value ? Number(e.target.value) : '' })}>
+              <option value="">광고주 선택</option>
+              {owners.map((o) => <option key={o.id} value={o.id}>{o.username} ({o.company || o.role})</option>)}
+            </select>
+          </div>
+        )}
 
         {isA ? (
           <>
@@ -458,13 +460,15 @@ export default function ProductCampaign() {
 
       {/* 업로드 모달 */}
       <Modal open={uploadOpen} onClose={() => setUploadOpen(false)} title={`${meta.label} 엑셀 업로드`}>
-        <div style={fieldStyle}>
-          <label style={labelStyle}>광고주 <span style={{ color: colors.danger }}>*</span></label>
-          <select style={inputStyle} value={uploadUser} onChange={(e) => setUploadUser(e.target.value ? Number(e.target.value) : '')}>
-            <option value="">광고주 선택</option>
-            {owners.map((o) => <option key={o.id} value={o.id}>{o.username} ({o.company || o.role})</option>)}
-          </select>
-        </div>
+        {canManage && (
+          <div style={fieldStyle}>
+            <label style={labelStyle}>광고주 <span style={{ color: colors.danger }}>*</span></label>
+            <select style={inputStyle} value={uploadUser} onChange={(e) => setUploadUser(e.target.value ? Number(e.target.value) : '')}>
+              <option value="">광고주 선택</option>
+              {owners.map((o) => <option key={o.id} value={o.id}>{o.username} ({o.company || o.role})</option>)}
+            </select>
+          </div>
+        )}
         <div style={fieldStyle}>
           <label style={labelStyle}>엑셀 파일 ({meta.label} 양식)</label>
           <input type="file" accept=".xlsx,.xls" onChange={(e) => setUploadFile(e.target.files?.[0] || null)} />

@@ -178,13 +178,16 @@ def get_campaign(campaign_id):
 
 
 @campaigns_bp.route('/', methods=['POST'])
-@require_roles('admin', 'distributor')
+@require_roles('admin', 'distributor', 'agency', 'user')
 def create_campaign():
     try:
         current = get_current_user()
         data = request.get_json() or {}
         days = data.pop('days', None)
 
+        # 광고주/대행사는 본인 것만 등록 가능
+        if current['role'] in LEAF_ROLES:
+            data['user_id'] = current['id']
         if not data.get('user_id'):
             return jsonify({'error': 'VALIDATION_ERROR', 'message': '사용자를 선택해주세요.'}), 400
         if not data.get('place_name') and not data.get('keyword_main'):
@@ -234,12 +237,9 @@ def update_campaign(campaign_id):
         if current['role'] == 'distributor' and not _can_distributor_edit(current, campaign):
             return jsonify({'error': 'FORBIDDEN', 'message': '권한이 없습니다.'}), 403
 
-        # 리프/총판은 상태 직접 변경 불가, 리프는 날짜 변경 불가
+        # 상태(승인) 변경은 관리자만 — 그 외 역할은 status 무시. 날짜/내용은 본인 것 수정 허용.
         if current['role'] != 'admin':
             data.pop('status', None)
-        if current['role'] in LEAF_ROLES:
-            data.pop('start_date', None)
-            data.pop('end_date', None)
 
         verr = _validate_content(data)
         if verr:
@@ -427,7 +427,7 @@ def download_template():
 
 
 @campaigns_bp.route('/excel-upload', methods=['POST'])
-@require_roles('admin', 'distributor')
+@require_roles('admin', 'distributor', 'agency', 'user')
 def upload_excel():
     try:
         current = get_current_user()
@@ -440,9 +440,13 @@ def upload_excel():
         product_type = request.form.get('product_type', 'bdc1')
         if product_type not in PRODUCTS:
             product_type = 'bdc1'
-        if not request.form.get('user_id'):
-            return jsonify({'error': 'VALIDATION_ERROR', 'message': '대상 사용자를 선택해주세요.'}), 400
-        target_user_id = int(request.form.get('user_id'))
+        # 광고주/대행사는 본인 대상으로만 업로드
+        if current['role'] in LEAF_ROLES:
+            target_user_id = current['id']
+        else:
+            if not request.form.get('user_id'):
+                return jsonify({'error': 'VALIDATION_ERROR', 'message': '대상 사용자를 선택해주세요.'}), 400
+            target_user_id = int(request.form.get('user_id'))
 
         results, count, errors = parse_campaign_excel(file.read(), product_type, target_user_id, current['id'])
         if not results:
