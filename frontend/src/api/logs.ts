@@ -3,11 +3,11 @@ import type { ApiResponse, CampaignLog, CampaignChangeDetail } from '../types';
 
 export const getLogs = (params?: {
   page?: number; per_page?: number; search?: string; user_id?: number;
-  start_date?: string; end_date?: string;
+  start_date?: string; end_date?: string; product_type?: string;
 }) => api.get<ApiResponse<{ logs: CampaignLog[]; total: number }>>('/logs/', { params });
 
 export const getLogStats = (params?: {
-  search?: string; user_id?: number; start_date?: string; end_date?: string;
+  search?: string; user_id?: number; start_date?: string; end_date?: string; product_type?: string;
 }) =>
   api.get<ApiResponse<{ total_count: number; total_ta: number; total_days: number }>>('/logs/stats', { params });
 

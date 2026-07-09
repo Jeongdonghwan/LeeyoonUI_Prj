@@ -5,13 +5,18 @@ class LogModel:
     """campaign_logs 기반 로그 조회/통계"""
 
     @staticmethod
-    def _build_where(user_id=None, search_user_ids=None, start_date=None, end_date=None, current_user=None):
+    def _build_where(user_id=None, search_user_ids=None, start_date=None, end_date=None,
+                     current_user=None, product_type=None):
         where = "WHERE 1=1"
         params = []
 
         if current_user and current_user['role'] == 'distributor':
             where += " AND cl.user_id IN (SELECT id FROM users WHERE parent_id = %s)"
             params.append(current_user['id'])
+
+        if product_type:
+            where += " AND cl.product_type = %s"
+            params.append(product_type)
 
         if user_id:
             where += " AND cl.user_id = %s"
@@ -43,11 +48,12 @@ class LogModel:
 
     @staticmethod
     def get_list(page=1, per_page=20, user_id=None, search_user_ids=None,
-                 start_date=None, end_date=None, current_user=None):
+                 start_date=None, end_date=None, current_user=None, product_type=None):
         with get_cursor() as (cursor, conn):
             where, params = LogModel._build_where(
                 user_id=user_id, search_user_ids=search_user_ids,
-                start_date=start_date, end_date=end_date, current_user=current_user
+                start_date=start_date, end_date=end_date, current_user=current_user,
+                product_type=product_type
             )
 
             cursor.execute(f"SELECT COUNT(*) as cnt FROM campaign_logs cl {where}", params)
@@ -87,11 +93,12 @@ class LogModel:
 
     @staticmethod
     def get_stats(user_id=None, search_user_ids=None,
-                  start_date=None, end_date=None, current_user=None):
+                  start_date=None, end_date=None, current_user=None, product_type=None):
         with get_cursor() as (cursor, conn):
             where, params = LogModel._build_where(
                 user_id=user_id, search_user_ids=search_user_ids,
-                start_date=start_date, end_date=end_date, current_user=current_user
+                start_date=start_date, end_date=end_date, current_user=current_user,
+                product_type=product_type
             )
             cursor.execute(
                 f"SELECT COUNT(*) as total_count, "

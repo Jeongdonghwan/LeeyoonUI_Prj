@@ -74,6 +74,7 @@ export default function ProductCampaign() {
     memo: '',
   });
   const [form, setForm] = useState(blankForm());
+  const [fillValue, setFillValue] = useState<number | ''>('');
 
   const load = useCallback(async () => {
     const [res, s] = await Promise.all([
@@ -100,6 +101,9 @@ export default function ProductCampaign() {
     return { ...f, run_days: n, days };
   });
 
+  // 일자별 전체 채우기 (빠른 입력)
+  const fillAllDays = (v: number) => setForm((f) => ({ ...f, days: f.days.map((d) => ({ ...d, ta: v })) }));
+
   const totalTa = useMemo(() => {
     if (isA) return (Number(form.daily_ta) || 0) * (Number(form.run_days) || 0);
     return form.days.reduce((s, d) => s + (Number(d.ta) || 0), 0);
@@ -112,12 +116,13 @@ export default function ProductCampaign() {
     const res = await getCampaign(c.id);
     const d = res.data.data;
     const dayMap = new Map((d.days || []).map((x) => [x.day_no, x.ta]));
+    const runDays = Math.max(Number(d.run_days) || 0, (d.days || []).length, MIN_RUN_DAYS);
     setForm({
       user_id: d.user_id,
       place_name: d.place_name || '', keyword_main: d.keyword_main || '', place_url: d.place_url || '',
       intake_date: d.intake_date || '', start_date: d.start_date || '', end_date: d.end_date || '',
-      daily_ta: d.daily_ta ?? 100, run_days: isA ? (d.run_days ?? MIN_RUN_DAYS) : MIN_RUN_DAYS,
-      days: EMPTY_DAYS.map((x) => ({ day_no: x.day_no, ta: (dayMap.get(x.day_no) ?? '') as number | '' })),
+      daily_ta: d.daily_ta ?? 100, run_days: runDays,
+      days: Array.from({ length: isA ? MIN_RUN_DAYS : runDays }, (_, i) => ({ day_no: i + 1, ta: (dayMap.get(i + 1) ?? '') as number | '' })),
       memo: d.memo || '',
     });
     setEditId(c.id);
@@ -141,11 +146,11 @@ export default function ProductCampaign() {
     if (!form.user_id) return toast.error('광고주를 선택해주세요.');
     if (!form.place_name && !form.keyword_main) return toast.error('업체명/메인키워드를 입력해주세요.');
     if (!validateContent(form.keyword_main, form.place_url)) return;
-    // 북두칠성2(일자별)는 7일 고정, 북두칠성1·3은 최소 7일(1일 단위)
-    const runDays = isA ? (Number(form.run_days) || 0) : MIN_RUN_DAYS;
-    if (isA && runDays < MIN_RUN_DAYS) return toast.error(`구동일수는 최소 ${MIN_RUN_DAYS}일 이상이어야 합니다.`);
-    // 북두칠성2: 일자별 작업량은 각 100타 이상
-    if (!isA && form.days.some((d) => (Number(d.ta) || 0) < 100)) {
+    // 구동일수: A·B 모두 최소 7일(1일 단위). B형은 이 값만큼 일자별 칸이 생성됨.
+    const runDays = Number(form.run_days) || 0;
+    if (runDays < MIN_RUN_DAYS) return toast.error(`구동일수는 최소 ${MIN_RUN_DAYS}일 이상이어야 합니다.`);
+    // 북두칠성2/길찾기: 일자별 작업량은 각 100타 이상
+    if (!isA && form.days.slice(0, runDays).some((d) => (Number(d.ta) || 0) < 100)) {
       return toast.error('일자별 작업량은 각 100타 이상 입력해주세요.');
     }
 
@@ -410,8 +415,25 @@ export default function ProductCampaign() {
             </Row>
             <Field label="메인키워드"><input style={inputStyle} value={form.keyword_main} onChange={(e) => setForm({ ...form, keyword_main: e.target.value })} placeholder="완성된 단어로 입력" /></Field>
             <Field label="플레이스 링크"><input style={inputStyle} value={form.place_url} onChange={(e) => setForm({ ...form, place_url: e.target.value })} placeholder="https://m.place.naver.com/..." /></Field>
-            <Field label="시작일"><input type="date" style={inputStyle} value={form.start_date} onChange={(e) => setForm({ ...form, start_date: e.target.value })} /></Field>
-            <Field label="일자별 작업량 (D-1 ~ D-7, 매일 다르게 입력 가능)">
+            <Row>
+              <Field label="시작일"><input type="date" style={inputStyle} value={form.start_date} onChange={(e) => setForm({ ...form, start_date: e.target.value })} /></Field>
+              <Field label="구동일수 (최소 7일, 1일 단위)">
+                <input type="number" min={MIN_RUN_DAYS} step={1} style={inputStyle} value={form.run_days}
+                  onChange={(e) => setRunDays(e.target.value ? Number(e.target.value) : 0)} />
+              </Field>
+            </Row>
+            <Field label={`일자별 작업량 (D-1 ~ D-${form.days.length}, 매일 다르게 입력 가능)`}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8, flexWrap: 'wrap' }}>
+                <span style={{ fontSize: 12, color: colors.textMuted }}>전체 채우기:</span>
+                {[100, 200, 300, 400, 500].map((v) => (
+                  <button key={v} type="button" style={{ ...btnSecondary, padding: '4px 10px', fontSize: 12 }} onClick={() => fillAllDays(v)}>{v}</button>
+                ))}
+                <input type="number" min={100} step={10} placeholder="직접" value={fillValue}
+                  onChange={(e) => setFillValue(e.target.value ? Number(e.target.value) : '')}
+                  style={{ ...inputStyle, width: 80, padding: '4px 8px', fontSize: 12 }} />
+                <button type="button" style={{ ...btnPrimary, padding: '4px 10px', fontSize: 12 }}
+                  onClick={() => { if (fillValue) fillAllDays(Number(fillValue)); }}>적용</button>
+              </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 6 }}>
                 {form.days.map((d, i) => (
                   <div key={d.day_no} style={{ textAlign: 'center' }}>
@@ -421,7 +443,7 @@ export default function ProductCampaign() {
                   </div>
                 ))}
               </div>
-              <div style={{ fontSize: 12, color: colors.textMuted, marginTop: 6 }}>※ 북두칠성2는 7일 고정이며, 만료일은 시작일 + 7일로 자동 설정됩니다.</div>
+              <div style={{ fontSize: 12, color: colors.textMuted, marginTop: 6 }}>※ 구동일수만큼 D칸이 생성되며, 만료일은 시작일 + 구동일수로 자동 설정됩니다.</div>
             </Field>
           </>
         )}

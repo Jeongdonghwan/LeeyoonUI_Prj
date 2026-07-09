@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
-import { getLogs, getLogStats, exportLogs, getLogDetails } from '../api/logs';
-import { saveBlob } from '../api/campaigns';
+import { getLogs, getLogStats, getLogDetails } from '../api/logs';
+import { saveBlob, exportCampaignsIntake } from '../api/campaigns';
 import type { CampaignLog, CampaignChangeDetail } from '../types';
 import Pagination from '../components/common/Pagination';
 import Modal from '../components/common/Modal';
 import StatusBadge from '../components/common/StatusBadge';
 import {
-  colors, cardStyle, thStyle, tdStyle, inputStyle, btnPrimary, btnSecondary, btnSm, PRODUCT_META,
+  colors, cardStyle, thStyle, tdStyle, inputStyle, btnPrimary, btnSecondary, btnSm,
+  PRODUCT_META, PRODUCTS, type ProductType,
 } from '../styles/theme';
 import toast from 'react-hot-toast';
 
@@ -17,6 +18,8 @@ export default function LogManage() {
   const [search, setSearch] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [productType, setProductType] = useState<ProductType | ''>('');
+  const [selected, setSelected] = useState<number[]>([]);
   const [loading, setLoading] = useState(false);
   const [stats, setStats] = useState({ total_count: 0, total_ta: 0, total_days: 0 });
   const [trigger, setTrigger] = useState(0);
@@ -32,12 +35,13 @@ export default function LogManage() {
       setLoading(true);
       try {
         const [l, s] = await Promise.all([
-          getLogs({ page, per_page: perPage, search: search || undefined, start_date: startDate || undefined, end_date: endDate || undefined }),
-          getLogStats({ search: search || undefined, start_date: startDate || undefined, end_date: endDate || undefined }),
+          getLogs({ page, per_page: perPage, search: search || undefined, start_date: startDate || undefined, end_date: endDate || undefined, product_type: productType || undefined }),
+          getLogStats({ search: search || undefined, start_date: startDate || undefined, end_date: endDate || undefined, product_type: productType || undefined }),
         ]);
         setLogs(l.data.data.logs);
         setTotal(l.data.data.total);
         setStats(s.data.data);
+        setSelected([]);
       } catch { toast.error('로그를 불러오지 못했습니다.'); }
       finally { setLoading(false); }
     })();
@@ -55,11 +59,27 @@ export default function LogManage() {
     } catch { toast.error('상세 정보를 불러오지 못했습니다.'); setDetailOpen(false); }
   };
 
-  const handleExport = async () => {
+  const toggle = (campaignId: number) => setSelected((p) => p.includes(campaignId) ? p.filter((v) => v !== campaignId) : [...p, campaignId]);
+  const selectableIds = Array.from(new Set(logs.filter((l) => l.campaign_id).map((l) => l.campaign_id as number)));
+  const toggleAll = () => setSelected(selected.length === selectableIds.length ? [] : selectableIds);
+
+  // 선택 로그의 캠페인들을 접수 양식으로 다운로드
+  const exportSelected = async () => {
+    if (!selected.length) return toast.error('다운로드할 로그를 선택해주세요.');
     try {
-      const res = await exportLogs({ search: search || undefined, start_date: startDate || undefined, end_date: endDate || undefined });
-      saveBlob(res.data, `campaign_logs_${new Date().toISOString().slice(0, 10)}.xlsx`);
-    } catch { toast.error('엑셀 다운로드에 실패했습니다.'); }
+      const res = await exportCampaignsIntake({ ids: selected });
+      saveBlob(res.data, `접수양식_선택_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    } catch { toast.error('다운로드에 실패했습니다.'); }
+  };
+  // 현재 필터(상품+날짜) 전체를 접수 양식으로 다운로드
+  const exportAll = async () => {
+    try {
+      const res = await exportCampaignsIntake({
+        product_type: productType || undefined,
+        start_date: startDate || undefined, end_date: endDate || undefined,
+      });
+      saveBlob(res.data, `접수양식_${productType || '전체'}_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    } catch { toast.error('다운로드에 실패했습니다.'); }
   };
 
   const totalPages = Math.ceil(total / perPage);
@@ -88,27 +108,35 @@ export default function LogManage() {
 
       <div style={{ ...cardStyle, padding: 18 }}>
         <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
-          <input style={{ ...inputStyle, width: 200 }} placeholder="사용자 아이디 검색" value={search}
+          <select value={productType} onChange={(e) => { setProductType(e.target.value as ProductType | ''); setPage(1); setTrigger((v) => v + 1); }} style={{ ...inputStyle, width: 150 }}>
+            <option value="">전체 상품</option>
+            {PRODUCTS.map((p) => <option key={p} value={p}>{PRODUCT_META[p].label}</option>)}
+          </select>
+          <input style={{ ...inputStyle, width: 180 }} placeholder="사용자 아이디 검색" value={search}
             onChange={(e) => setSearch(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSearch()} />
           <input type="date" style={{ ...inputStyle, width: 150 }} value={startDate} onChange={(e) => setStartDate(e.target.value)} />
           <span style={{ color: colors.textMuted }}>~</span>
           <input type="date" style={{ ...inputStyle, width: 150 }} value={endDate} onChange={(e) => setEndDate(e.target.value)} />
           <button onClick={handleSearch} style={btnSecondary}>검색</button>
-          <button onClick={handleExport} style={btnPrimary}>엑셀 다운로드</button>
+          <div style={{ flex: 1 }} />
+          <button onClick={exportSelected} style={btnSecondary}>선택 접수양식 다운로드{selected.length ? ` (${selected.length})` : ''}</button>
+          <button onClick={exportAll} style={btnPrimary}>전체 접수양식 다운로드</button>
         </div>
 
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead><tr>
+              <th style={{ ...thStyle, width: 34 }}><input type="checkbox" checked={selectableIds.length > 0 && selected.length === selectableIds.length} onChange={toggleAll} /></th>
               {['번호', '구분', '사용자ID', '수정자', '캠페인번호', '상품유형', '총타수', '구동일수', '생성일시', '상세'].map((h) => <th key={h} style={thStyle}>{h}</th>)}
             </tr></thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={10} style={{ ...tdStyle, textAlign: 'center', padding: 40 }}>로딩 중...</td></tr>
+                <tr><td colSpan={11} style={{ ...tdStyle, textAlign: 'center', padding: 40 }}>로딩 중...</td></tr>
               ) : logs.length === 0 ? (
-                <tr><td colSpan={10} style={{ ...tdStyle, textAlign: 'center', padding: 40, color: colors.textMuted }}>데이터가 없습니다.</td></tr>
+                <tr><td colSpan={11} style={{ ...tdStyle, textAlign: 'center', padding: 40, color: colors.textMuted }}>데이터가 없습니다.</td></tr>
               ) : logs.map((log) => (
-                <tr key={log.id}>
+                <tr key={log.id} style={log.campaign_id && selected.includes(log.campaign_id) ? { background: colors.primarySoft } : undefined}>
+                  <td style={tdStyle}>{log.campaign_id ? <input type="checkbox" checked={selected.includes(log.campaign_id)} onChange={() => toggle(log.campaign_id as number)} /> : null}</td>
                   <td style={tdStyle}>{log.id}</td>
                   <td style={tdStyle}><StatusBadge status={log.type} /></td>
                   <td style={tdStyle}>{log.username || log.user_id}</td>

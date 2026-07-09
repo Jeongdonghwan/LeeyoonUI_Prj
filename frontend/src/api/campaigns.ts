@@ -57,6 +57,10 @@ export const downloadCampaignTemplate = (productType: ProductType) =>
 export const exportCampaigns = (productType: ProductType) =>
   api.get('/campaigns/excel-export', { params: { product_type: productType }, responseType: 'blob' });
 
+// 접수 양식(채워진 시트) 다운로드 — ids 또는 product_type+날짜범위
+export const exportCampaignsIntake = (body: { ids?: number[]; product_type?: ProductType; start_date?: string; end_date?: string }) =>
+  api.post('/campaigns/export-intake', body, { responseType: 'blob' });
+
 // blob 다운로드 헬퍼
 export const saveBlob = (data: Blob, filename: string) => {
   const url = window.URL.createObjectURL(data);

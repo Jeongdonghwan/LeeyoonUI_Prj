@@ -39,7 +39,8 @@ class CampaignModel:
 
     @staticmethod
     def get_list(user_id=None, created_by=None, status=None, product_type=None,
-                 search=None, page=1, per_page=20, sort='created_at', order='DESC'):
+                 search=None, page=1, per_page=20, sort='created_at', order='DESC',
+                 ids=None, created_from=None, created_to=None):
         where_parts = ["1=1"]
         params = []
 
@@ -47,12 +48,24 @@ class CampaignModel:
         where_parts += scope_parts
         params += scope_params
 
+        if ids is not None:
+            if not ids:
+                return [], 0
+            placeholders = ','.join(['%s'] * len(ids))
+            where_parts.append(f"c.id IN ({placeholders})")
+            params.extend(ids)
         if status:
             where_parts.append("c.status = %s")
             params.append(status)
         if product_type:
             where_parts.append("c.product_type = %s")
             params.append(product_type)
+        if created_from:
+            where_parts.append("DATE(c.created_at) >= %s")
+            params.append(created_from)
+        if created_to:
+            where_parts.append("DATE(c.created_at) <= %s")
+            params.append(created_to)
         if search:
             where_parts.append("(c.place_name LIKE %s OR c.keyword_main LIKE %s OR u.username LIKE %s)")
             params.extend([f'%{search}%'] * 3)

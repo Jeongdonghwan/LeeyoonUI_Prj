@@ -26,6 +26,8 @@ def _parse_filters():
     start_date = request.args.get('start_date', '').strip() or None
     end_date = request.args.get('end_date', '').strip() or None
 
+    product_type = request.args.get('product_type', '').strip() or None
+
     filter_user_id = int(user_id) if user_id else None
     search_user_ids = None
     if search and not filter_user_id:
@@ -34,7 +36,7 @@ def _parse_filters():
         if not search_user_ids:
             search_user_ids = [-1]
 
-    return filter_user_id, search_user_ids, start_date, end_date
+    return filter_user_id, search_user_ids, start_date, end_date, product_type
 
 
 @logs_bp.route('/', methods=['GET'])
@@ -45,7 +47,7 @@ def get_logs():
         page = int(request.args.get('page', 1))
         per_page = int(request.args.get('per_page', 20))
 
-        filter_user_id, search_user_ids, start_date, end_date = _parse_filters()
+        filter_user_id, search_user_ids, start_date, end_date, product_type = _parse_filters()
 
         logs, total = LogModel.get_list(
             page=page,
@@ -54,7 +56,8 @@ def get_logs():
             search_user_ids=search_user_ids,
             start_date=start_date,
             end_date=end_date,
-            current_user=current
+            current_user=current,
+            product_type=product_type
         )
 
         return jsonify({
@@ -71,14 +74,15 @@ def get_logs():
 def get_stats():
     try:
         current = get_current_user()
-        filter_user_id, search_user_ids, start_date, end_date = _parse_filters()
+        filter_user_id, search_user_ids, start_date, end_date, product_type = _parse_filters()
 
         stats = LogModel.get_stats(
             user_id=filter_user_id,
             search_user_ids=search_user_ids,
             start_date=start_date,
             end_date=end_date,
-            current_user=current
+            current_user=current,
+            product_type=product_type
         )
 
         return jsonify({
@@ -95,7 +99,7 @@ def get_stats():
 def excel_export():
     try:
         current = get_current_user()
-        filter_user_id, search_user_ids, start_date, end_date = _parse_filters()
+        filter_user_id, search_user_ids, start_date, end_date, _product_type = _parse_filters()
 
         logs = LogModel.get_all_for_export(
             user_id=filter_user_id,

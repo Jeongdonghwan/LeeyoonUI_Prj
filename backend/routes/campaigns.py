@@ -5,7 +5,7 @@ from models.campaign import CampaignModel
 from models.campaign_day import CampaignDayModel
 from models.campaign_change_detail import CampaignChangeDetailModel
 from utils.jwt_utils import require_roles, get_current_user
-from utils.excel_utils import generate_template, parse_campaign_excel, export_campaigns_excel, PRODUCTS
+from utils.excel_utils import generate_template, parse_campaign_excel, export_campaigns_excel, export_campaigns_multi, PRODUCTS
 from utils.db import get_cursor
 
 campaigns_bp = Blueprint('campaigns', __name__, url_prefix='/api/campaigns')
@@ -539,5 +539,47 @@ def export_excel():
         output = export_campaigns_excel(rows, product_type, days_map)
         return send_file(output, mimetype=XLSX_MIME, as_attachment=True,
                          download_name=f'{product_type}_campaigns.xlsx')
+    except Exception as e:
+        return jsonify({'error': 'INTERNAL_ERROR', 'message': str(e)}), 500
+
+
+@campaigns_bp.route('/export-intake', methods=['POST'])
+@require_roles('admin', 'distributor')
+def export_intake():
+    """접수 양식(채워진 트래픽/일자별 시트) 다운로드.
+    body: {ids?: [], product_type?, start_date?, end_date?} — ids 우선, 없으면 상품+등록일 범위"""
+    try:
+        current = get_current_user()
+        body = request.get_json() or {}
+        ids = body.get('ids')
+        product_type = body.get('product_type') or None
+        start_date = (body.get('start_date') or '').strip() or None
+        end_date = (body.get('end_date') or '').strip() or None
+        user_id, created_by = _scope_for(current)
+
+        if ids:
+            rows, _ = CampaignModel.get_list(user_id=user_id, created_by=created_by,
+                                             ids=[int(i) for i in ids], per_page=100000)
+        else:
+            if product_type and product_type not in PRODUCTS:
+                product_type = None
+            rows, _ = CampaignModel.get_list(user_id=user_id, created_by=created_by,
+                                             product_type=product_type,
+                                             created_from=start_date, created_to=end_date,
+                                             per_page=100000)
+        _stringify(rows)
+
+        # 상품별 그룹핑 (+ B형 days 로딩)
+        groups = {}
+        for r in rows:
+            pt = r.get('product_type') or 'bdc1'
+            groups.setdefault(pt, ([], {}))
+            groups[pt][0].append(r)
+            if PRODUCTS.get(pt, {}).get('format') == 'B':
+                groups[pt][1][r['id']] = CampaignDayModel.get_by_campaign(r['id'])
+
+        output = export_campaigns_multi(groups)
+        return send_file(output, mimetype=XLSX_MIME, as_attachment=True,
+                         download_name='접수양식.xlsx')
     except Exception as e:
         return jsonify({'error': 'INTERNAL_ERROR', 'message': str(e)}), 500

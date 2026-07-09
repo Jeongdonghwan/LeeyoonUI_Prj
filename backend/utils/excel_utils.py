@@ -1,5 +1,6 @@
 from openpyxl import Workbook, load_workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+from openpyxl.utils import get_column_letter
 from io import BytesIO
 from datetime import datetime, date, timedelta
 
@@ -59,7 +60,6 @@ def _to_int(v):
 
 # ---------------------------------------------------------------- template
 def _build_A_info(ws, product):
-    ws.title = '트래픽'
     ws['A1'] = '최소기간'; ws['B1'] = '7일(최소구동일자)'
     ws['A2'] = '최소 일타수'; ws['B2'] = '100타'
     ws['A3'] = '환불 불가'; ws['B3'] = 'A/S 불가'
@@ -82,26 +82,31 @@ def _build_A_info(ws, product):
         ws.merge_cells(f'{col_letter}5:{col_letter}6')
 
 
-def _build_B_header(ws, product):
-    ws.title = 'Sheet1'
+def _build_B_header(ws, product, max_days=MAX_DAYS):
+    """B형 헤더. max_days 만큼 D-1~D-max_days 열 생성. 반환: 총작업량 열 인덱스(1-based)"""
+    max_days = max(int(max_days or MAX_DAYS), 1)
     for col_idx, (name, width) in enumerate(zip(B_HEADERS, B_WIDTHS), 1):
         cell = ws.cell(row=1, column=col_idx, value=name)
         cell.font = BOLD; cell.fill = CREAM; cell.alignment = CENTER; cell.border = BORDER
         col_letter = cell.column_letter
         ws.column_dimensions[col_letter].width = width
         ws.merge_cells(f'{col_letter}1:{col_letter}2')
-    # G1 일자별 작업량[타] (G1:M1), G2..M2 = D-1..D-7
-    g = ws.cell(row=1, column=7, value='일자별 작업량[타]')
+    # 일자별 작업량[타] 병합 (G1 ~ 마지막 일자열)
+    first_day_col = 7
+    last_day_col = 6 + max_days
+    g = ws.cell(row=1, column=first_day_col, value='일자별 작업량[타]')
     g.font = BOLD; g.fill = CREAM; g.alignment = CENTER; g.border = BORDER
-    ws.merge_cells('G1:M1')
-    for i in range(MAX_DAYS):
-        c = ws.cell(row=2, column=7 + i, value=f'D-{i + 1}')
+    ws.merge_cells(f'{get_column_letter(first_day_col)}1:{get_column_letter(last_day_col)}1')
+    for i in range(max_days):
+        c = ws.cell(row=2, column=first_day_col + i, value=f'D-{i + 1}')
         c.font = BOLD; c.fill = CREAM; c.alignment = CENTER; c.border = BORDER
         ws.column_dimensions[c.column_letter].width = 8
-    n = ws.cell(row=1, column=14, value='총작업량')
+    total_col = last_day_col + 1
+    n = ws.cell(row=1, column=total_col, value='총작업량')
     n.font = BOLD; n.fill = CREAM; n.alignment = CENTER; n.border = BORDER
-    ws.merge_cells('N1:N2')
-    ws.column_dimensions['N'].width = 12
+    ws.merge_cells(f'{get_column_letter(total_col)}1:{get_column_letter(total_col)}2')
+    ws.column_dimensions[get_column_letter(total_col)].width = 12
+    return total_col
 
 
 def generate_template(product_type):
@@ -110,6 +115,7 @@ def generate_template(product_type):
     ws = wb.active
 
     if product['format'] == 'A':
+        ws.title = '트래픽'
         _build_A_info(ws, product)
         # 예시 행 (7행)
         ex = [datetime(2026, 5, 30), '풋사랑정형외과의원', '부산정형외과',
@@ -120,6 +126,7 @@ def generate_template(product_type):
         tot.font = RED_BOLD; tot.alignment = CENTER
         mk = ws.cell(row=7, column=8, value='예시'); mk.fill = YELLOW
     else:
+        ws.title = 'Sheet1'
         _build_B_header(ws, product)
         ex = ['2026. 6.18', '예시1', '예시2', 'https://m.place.naver.com/place/1670099706',
               '2026. 6. 19', '2026. 6. 25', 100, 250, 110, 150, 180, 130, 300, 1220]
@@ -169,6 +176,20 @@ def parse_campaign_excel(file_bytes, product_type, user_id, created_by):
                 'status': 'pending',
             })
     else:
+        # 일자열 개수를 동적으로 판정: 헤더 1행에서 '총작업량' 열을 찾음 → 일자열 = index 6 ~ (총작업량-1)
+        header = rows[0] if rows else ()
+        total_col = None
+        for i, v in enumerate(header):
+            if v is not None and str(v).strip() == '총작업량':
+                total_col = i
+                break
+        if total_col is None:
+            # 폴백: 2행의 'D-n' 헤더 개수로 판정
+            drow = rows[1] if len(rows) > 1 else ()
+            n = sum(1 for j in range(6, len(drow)) if drow[j] is not None and str(drow[j]).startswith('D-'))
+            total_col = 6 + (n if n else MAX_DAYS)
+        day_cols = list(range(6, max(total_col, 7)))  # 최소 D-1 한 칸은 확보
+
         # 헤더 1~2행, 데이터 3행부터
         for row_idx, row in enumerate(rows[2:], 3):
             if not row:
@@ -184,10 +205,10 @@ def parse_campaign_excel(file_bytes, product_type, user_id, created_by):
                 errors.append({'row': row_idx, 'error': '업체명/메인키워드 누락'})
                 continue
             days = []
-            for i in range(MAX_DAYS):
-                ta = _to_int(row[6 + i] if len(row) > 6 + i else None)
+            for pos, col in enumerate(day_cols):
+                ta = _to_int(row[col] if len(row) > col else None)
                 if ta:
-                    days.append({'day_no': i + 1, 'ta': ta})
+                    days.append({'day_no': pos + 1, 'ta': ta})
             total = sum(d['ta'] for d in days)
             start = _to_date(row[4] if len(row) > 4 else None)
             results.append({
@@ -197,6 +218,7 @@ def parse_campaign_excel(file_bytes, product_type, user_id, created_by):
                 'intake_date': _to_date(row[0] if len(row) > 0 else None),
                 'start_date': start,
                 'end_date': _to_date(row[5] if len(row) > 5 else None),
+                'run_days': len(day_cols),
                 'total_ta': total, 'days': days,
                 'status': 'pending',
             })
@@ -205,41 +227,71 @@ def parse_campaign_excel(file_bytes, product_type, user_id, created_by):
 
 
 # ---------------------------------------------------------------- export list
-def export_campaigns_excel(campaigns, product_type, days_map=None):
+def _write_A_sheet(ws, product, campaigns):
+    _build_A_info(ws, product)
+    r = 7
+    for c in campaigns:
+        ws.cell(row=r, column=1, value=str(c.get('start_date') or ''))
+        ws.cell(row=r, column=2, value=c.get('place_name'))
+        ws.cell(row=r, column=3, value=c.get('keyword_main'))
+        ws.cell(row=r, column=4, value=c.get('place_url'))
+        ws.cell(row=r, column=5, value=c.get('daily_ta'))
+        ws.cell(row=r, column=6, value=c.get('run_days'))
+        ws.cell(row=r, column=7, value=c.get('total_ta')).font = RED_BOLD
+        r += 1
+
+
+def _write_B_sheet(ws, product, campaigns, days_map):
+    # 캠페인들 중 최대 일수로 D열 개수 결정
+    max_days = MAX_DAYS
+    for c in campaigns:
+        dm = days_map.get(c.get('id'), [])
+        cand = max([d['day_no'] for d in dm], default=0)
+        max_days = max(max_days, cand, int(c.get('run_days') or 0))
+    total_col = _build_B_header(ws, product, max_days)
+    r = 3
+    for c in campaigns:
+        ws.cell(row=r, column=1, value=str(c.get('intake_date') or ''))
+        ws.cell(row=r, column=2, value=c.get('keyword_main'))
+        ws.cell(row=r, column=3, value=c.get('place_name'))
+        ws.cell(row=r, column=4, value=c.get('place_url'))
+        ws.cell(row=r, column=5, value=str(c.get('start_date') or ''))
+        ws.cell(row=r, column=6, value=str(c.get('end_date') or ''))
+        day_by_no = {d['day_no']: d['ta'] for d in days_map.get(c.get('id'), [])}
+        for i in range(max_days):
+            ws.cell(row=r, column=7 + i, value=day_by_no.get(i + 1))
+        ws.cell(row=r, column=total_col, value=c.get('total_ta'))
+        r += 1
+
+
+def _write_campaign_sheet(ws, product_type, campaigns, days_map):
     product = PRODUCTS.get(product_type, PRODUCTS['bdc1'])
-    days_map = days_map or {}
-    wb = Workbook()
-    ws = wb.active
-
     if product['format'] == 'A':
-        _build_A_info(ws, product)
-        r = 7
-        for c in campaigns:
-            ws.cell(row=r, column=1, value=str(c.get('start_date') or ''))
-            ws.cell(row=r, column=2, value=c.get('place_name'))
-            ws.cell(row=r, column=3, value=c.get('keyword_main'))
-            ws.cell(row=r, column=4, value=c.get('place_url'))
-            ws.cell(row=r, column=5, value=c.get('daily_ta'))
-            ws.cell(row=r, column=6, value=c.get('run_days'))
-            tot = ws.cell(row=r, column=7, value=c.get('total_ta'))
-            tot.font = RED_BOLD
-            r += 1
+        _write_A_sheet(ws, product, campaigns)
     else:
-        _build_B_header(ws, product)
-        r = 3
-        for c in campaigns:
-            ws.cell(row=r, column=1, value=str(c.get('intake_date') or ''))
-            ws.cell(row=r, column=2, value=c.get('keyword_main'))
-            ws.cell(row=r, column=3, value=c.get('place_name'))
-            ws.cell(row=r, column=4, value=c.get('place_url'))
-            ws.cell(row=r, column=5, value=str(c.get('start_date') or ''))
-            ws.cell(row=r, column=6, value=str(c.get('end_date') or ''))
-            day_by_no = {d['day_no']: d['ta'] for d in days_map.get(c.get('id'), [])}
-            for i in range(MAX_DAYS):
-                ws.cell(row=r, column=7 + i, value=day_by_no.get(i + 1))
-            ws.cell(row=r, column=14, value=c.get('total_ta'))
-            r += 1
+        _write_B_sheet(ws, product, campaigns, days_map or {})
 
+
+def export_campaigns_excel(campaigns, product_type, days_map=None):
+    """단일 상품 접수양식 다운로드"""
+    wb = Workbook()
+    _write_campaign_sheet(wb.active, product_type, campaigns, days_map or {})
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+    return output
+
+
+def export_campaigns_multi(groups):
+    """상품별 다중 시트 접수양식 다운로드. groups={product_type: (campaigns, days_map)}"""
+    wb = Workbook()
+    wb.remove(wb.active)
+    if not groups:
+        wb.create_sheet('없음')
+    for pt, (campaigns, days_map) in groups.items():
+        label = PRODUCTS.get(pt, {}).get('label', pt)
+        ws = wb.create_sheet(str(label)[:31])
+        _write_campaign_sheet(ws, pt, campaigns, days_map or {})
     output = BytesIO()
     wb.save(output)
     output.seek(0)
