@@ -212,7 +212,7 @@ export default function AccountManage() {
               {PRODUCTS.map((pt) => (
                 <div key={pt} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <span style={{ fontSize: 12, color: colors.textMuted, width: 84, flexShrink: 0 }}>{PRODUCT_META[pt].label}</span>
-                  <input type="number" min={0} step={100} style={{ ...inputStyle, padding: '7px 10px' }} placeholder="0"
+                  <input type="number" min={0} step={1} style={{ ...inputStyle, padding: '7px 10px' }} placeholder="0"
                     value={editPrices[pt]} onChange={(e) => setEditPrices({ ...editPrices, [pt]: e.target.value ? Number(e.target.value) : '' })} />
                 </div>
               ))}
