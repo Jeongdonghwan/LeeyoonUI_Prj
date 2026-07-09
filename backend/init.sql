@@ -95,6 +95,17 @@ CREATE TABLE IF NOT EXISTS notices (
   FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
 );
 
+-- ============================================================
+-- 광고주(개인)별 상품 단가 — 계정마다 상품별 단가 설정
+-- ============================================================
+CREATE TABLE IF NOT EXISTS user_prices (
+  user_id      INT NOT NULL,
+  product_type ENUM('bdc1', 'bdc2', 'bdc3', 'bdcnav') NOT NULL,
+  price        INT NOT NULL DEFAULT 0,
+  PRIMARY KEY (user_id, product_type),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
 -- 기본 admin 계정 (비밀번호: admin1234)
 INSERT IGNORE INTO users (username, password_hash, role) VALUES
 ('admin', '$2b$12$K7zzp9KQOOVgSqW6rmvNfePmAAE3AJCetnFtZmb0VVGbx0hn7Bf0G', 'admin');

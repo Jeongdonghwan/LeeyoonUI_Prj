@@ -63,13 +63,17 @@ export default function LogManage() {
   const selectableIds = Array.from(new Set(logs.filter((l) => l.campaign_id).map((l) => l.campaign_id as number)));
   const toggleAll = () => setSelected(selected.length === selectableIds.length ? [] : selectableIds);
 
+  // blob 응답 에러에서 메시지 추출
+  const blobErrMsg = async (e: any) => {
+    try { const t = await e?.response?.data?.text?.(); return t ? JSON.parse(t).message : null; } catch { return null; }
+  };
   // 선택 로그의 캠페인들을 접수 양식으로 다운로드
   const exportSelected = async () => {
     if (!selected.length) return toast.error('다운로드할 로그를 선택해주세요.');
     try {
       const res = await exportCampaignsIntake({ ids: selected });
       saveBlob(res.data, `접수양식_선택_${new Date().toISOString().slice(0, 10)}.xlsx`);
-    } catch { toast.error('다운로드에 실패했습니다.'); }
+    } catch (e) { toast.error((await blobErrMsg(e)) || '다운로드에 실패했습니다.'); }
   };
   // 현재 필터(상품+날짜) 전체를 접수 양식으로 다운로드
   const exportAll = async () => {
@@ -79,7 +83,7 @@ export default function LogManage() {
         start_date: startDate || undefined, end_date: endDate || undefined,
       });
       saveBlob(res.data, `접수양식_${productType || '전체'}_${new Date().toISOString().slice(0, 10)}.xlsx`);
-    } catch { toast.error('다운로드에 실패했습니다.'); }
+    } catch (e) { toast.error((await blobErrMsg(e)) || '다운로드에 실패했습니다.'); }
   };
 
   const totalPages = Math.ceil(total / perPage);

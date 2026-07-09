@@ -263,7 +263,7 @@ export default function ProductCampaign() {
   };
 
   const totalPages = Math.ceil(total / perPage);
-  const colCount = (isA ? 11 : 10) + 1 + (canManage ? 1 : 0);
+  const colCount = (isA ? 11 : 10) + 2 + (canManage ? 1 : 0);
 
   return (
     <div>
@@ -316,7 +316,7 @@ export default function ProductCampaign() {
               {(isA
                 ? ['번호', '상태', '아이디', '구동시작일', '업체명', '메인키워드', 'URL', '일타수', '구동일수', '총타수', '종료일']
                 : ['번호', '상태', '아이디', '접수일', '메인키워드', '업체명', '링크', '시작일', '만료일', '총작업량']
-              ).concat(['관리']).map((h) => <th key={h} style={thStyle}>{h}</th>)}
+              ).concat(['단가', '관리']).map((h) => <th key={h} style={thStyle}>{h}</th>)}
             </tr></thead>
             <tbody>
               {rows.length === 0 && (
@@ -350,6 +350,7 @@ export default function ProductCampaign() {
                       <td style={{ ...tdStyle, fontWeight: 600 }}>{(c.total_ta ?? 0).toLocaleString()}</td>
                     </>
                   )}
+                  <td style={tdStyle}>{c.unit_price != null ? `${c.unit_price.toLocaleString()}원` : '-'}</td>
                   <td style={tdStyle}>
                     <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                       {isAdmin && (

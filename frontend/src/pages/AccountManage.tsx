@@ -26,6 +26,7 @@ export default function AccountManage() {
 
   const [editOpen, setEditOpen] = useState(false);
   const [editForm, setEditForm] = useState({ id: 0, username: '', password: '', role: 'user', company: '', memo: '' });
+  const [editPrices, setEditPrices] = useState<Record<string, number | ''>>({ bdc1: '', bdc2: '', bdc3: '', bdcnav: '' });
 
   const [qtyOpen, setQtyOpen] = useState(false);
   const [qtyTarget, setQtyTarget] = useState<{ id: number; username: string }>({ id: 0, username: '' });
@@ -65,6 +66,8 @@ export default function AccountManage() {
 
   const openEdit = (u: User) => {
     setEditForm({ id: u.id, username: u.username, password: '', role: u.role, company: u.company || '', memo: u.memo || '' });
+    const p = u.prices || {};
+    setEditPrices({ bdc1: p.bdc1 ?? '', bdc2: p.bdc2 ?? '', bdc3: p.bdc3 ?? '', bdcnav: p.bdcnav ?? '' });
     setEditOpen(true);
   };
   const handleEdit = async (e: FormEvent) => {
@@ -72,6 +75,7 @@ export default function AccountManage() {
     try {
       const data: any = { role: editForm.role, company: editForm.company, memo: editForm.memo };
       if (editForm.password) data.password = editForm.password;
+      data.prices = Object.fromEntries(PRODUCTS.map((pt) => [pt, Number(editPrices[pt]) || 0]));
       await updateUser(editForm.id, data);
       toast.success('계정이 수정되었습니다.');
       setEditOpen(false);
@@ -202,6 +206,18 @@ export default function AccountManage() {
           <Field label="권한"><select style={inputStyle} value={editForm.role} onChange={(e) => setEditForm({ ...editForm, role: e.target.value })}>{roleOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}</select></Field>
           <Field label="회사명"><input style={inputStyle} value={editForm.company} onChange={(e) => setEditForm({ ...editForm, company: e.target.value })} /></Field>
           <Field label="메모"><textarea style={{ ...inputStyle, height: 60, resize: 'vertical' }} value={editForm.memo} onChange={(e) => setEditForm({ ...editForm, memo: e.target.value })} /></Field>
+          <div style={{ marginTop: 6, marginBottom: 4 }}>
+            <label style={{ ...labelStyle, marginBottom: 8 }}>상품별 단가 (원)</label>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              {PRODUCTS.map((pt) => (
+                <div key={pt} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: 12, color: colors.textMuted, width: 84, flexShrink: 0 }}>{PRODUCT_META[pt].label}</span>
+                  <input type="number" min={0} step={100} style={{ ...inputStyle, padding: '7px 10px' }} placeholder="0"
+                    value={editPrices[pt]} onChange={(e) => setEditPrices({ ...editPrices, [pt]: e.target.value ? Number(e.target.value) : '' })} />
+                </div>
+              ))}
+            </div>
+          </div>
           <Footer onCancel={() => setEditOpen(false)} submitLabel="수정" />
         </form>
       </Modal>

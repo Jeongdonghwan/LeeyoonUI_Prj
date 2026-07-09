@@ -567,6 +567,9 @@ def export_intake():
                                              product_type=product_type,
                                              created_from=start_date, created_to=end_date,
                                              per_page=100000)
+        if not rows:
+            return jsonify({'error': 'NOT_FOUND',
+                            'message': '다운로드할 캠페인이 없습니다. (선택 항목이 삭제되었거나 조건에 맞는 캠페인이 없음)'}), 404
         _stringify(rows)
 
         # 상품별 그룹핑 (+ B형 days 로딩)

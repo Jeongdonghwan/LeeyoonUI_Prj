@@ -15,10 +15,12 @@ class CampaignModel:
     def find_by_id(campaign_id: int):
         with get_cursor() as (cursor, conn):
             cursor.execute(
-                "SELECT c.*, u.username as user_username, cr.username as creator_username "
+                "SELECT c.*, u.username as user_username, cr.username as creator_username, "
+                "up.price as unit_price "
                 "FROM campaigns c "
                 "LEFT JOIN users u ON c.user_id = u.id "
                 "LEFT JOIN users cr ON c.created_by = cr.id "
+                "LEFT JOIN user_prices up ON up.user_id = c.user_id AND up.product_type = c.product_type "
                 "WHERE c.id = %s",
                 (campaign_id,)
             )
@@ -84,10 +86,12 @@ class CampaignModel:
             total = cursor.fetchone()['cnt']
 
             cursor.execute(
-                f"SELECT c.*, u.username as user_username, cr.username as creator_username "
+                f"SELECT c.*, u.username as user_username, cr.username as creator_username, "
+                f"up.price as unit_price "
                 f"FROM campaigns c "
                 f"LEFT JOIN users u ON c.user_id = u.id "
                 f"LEFT JOIN users cr ON c.created_by = cr.id "
+                f"LEFT JOIN user_prices up ON up.user_id = c.user_id AND up.product_type = c.product_type "
                 f"WHERE {where} ORDER BY c.{sort_col} {order_dir} "
                 f"LIMIT %s OFFSET %s",
                 params + [per_page, offset]

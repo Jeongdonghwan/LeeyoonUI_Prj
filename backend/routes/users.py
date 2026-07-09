@@ -55,6 +55,17 @@ def get_users():
                 u['created_at'] = str(u['created_at'])
             for k in ('sub_distributor', 'sub_agency', 'sub_user', 'campaign_total', 'campaign_used'):
                 u[k] = int(u.get(k) or 0)
+            u['prices'] = {}
+
+        # 상품별 단가 부착
+        if users:
+            uid_list = [u['id'] for u in users]
+            with get_cursor() as (cursor, conn):
+                ph = ','.join(['%s'] * len(uid_list))
+                cursor.execute(f"SELECT user_id, product_type, price FROM user_prices WHERE user_id IN ({ph})", uid_list)
+                by_id = {u['id']: u for u in users}
+                for row in cursor.fetchall():
+                    by_id[row['user_id']]['prices'][row['product_type']] = row['price']
 
         return jsonify({'success': True, 'data': {'users': users, 'total': total},
                         'message': '계정 목록 조회 성공'})
@@ -135,12 +146,27 @@ def update_user(user_id):
             fields.append("memo = %s")
             params.append(data['memo'])
 
-        if not fields:
+        prices = data.get('prices') if isinstance(data.get('prices'), dict) else None
+
+        if not fields and not prices:
             return jsonify({'error': 'VALIDATION_ERROR', 'message': '수정할 항목이 없습니다.'}), 400
 
-        params.append(user_id)
         with get_cursor() as (cursor, conn):
-            cursor.execute(f"UPDATE users SET {', '.join(fields)} WHERE id = %s", params)
+            if fields:
+                cursor.execute(f"UPDATE users SET {', '.join(fields)} WHERE id = %s", params + [user_id])
+            # 상품별 단가 upsert
+            if prices:
+                for pt in ('bdc1', 'bdc2', 'bdc3', 'bdcnav'):
+                    if pt in prices:
+                        try:
+                            p = int(prices[pt] or 0)
+                        except (ValueError, TypeError):
+                            p = 0
+                        cursor.execute(
+                            "INSERT INTO user_prices (user_id, product_type, price) VALUES (%s, %s, %s) "
+                            "ON DUPLICATE KEY UPDATE price = VALUES(price)",
+                            (user_id, pt, p)
+                        )
             conn.commit()
 
         updated = UserModel.find_by_id(user_id)

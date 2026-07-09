@@ -17,6 +17,7 @@ export const updateUser = (id: number, data: {
   role?: string;
   company?: string;
   memo?: string;
+  prices?: Record<string, number>;
 }) => api.put<ApiResponse<User>>(`/users/${id}`, data);
 
 export const deleteUser = (id: number) =>

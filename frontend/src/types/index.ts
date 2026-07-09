@@ -16,6 +16,7 @@ export interface User {
   sub_user: number;
   campaign_total: number;
   campaign_used: number;
+  prices?: Partial<Record<ProductType, number>>;
 }
 
 export interface LoginResponse {
@@ -66,6 +67,7 @@ export interface Campaign {
   // join 컬럼
   user_username?: string;
   creator_username?: string;
+  unit_price?: number | null;
   days?: CampaignDay[];
 }
 
