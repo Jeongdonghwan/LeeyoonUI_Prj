@@ -207,7 +207,7 @@ export default function AccountManage() {
           <Field label="회사명"><input style={inputStyle} value={editForm.company} onChange={(e) => setEditForm({ ...editForm, company: e.target.value })} /></Field>
           <Field label="메모"><textarea style={{ ...inputStyle, height: 60, resize: 'vertical' }} value={editForm.memo} onChange={(e) => setEditForm({ ...editForm, memo: e.target.value })} /></Field>
           <div style={{ marginTop: 6, marginBottom: 4 }}>
-            <label style={{ ...labelStyle, marginBottom: 8 }}>상품별 단가 (원)</label>
+            <label style={{ ...labelStyle, marginBottom: 8 }}>상품별 1타당 단가 (원/타)</label>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
               {PRODUCTS.map((pt) => (
                 <div key={pt} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>

@@ -86,14 +86,14 @@ export default function CampaignManage() {
           <table style={styles.table}>
             <thead>
               <tr>
-                {['번호', '상품', '상태', '아이디', '업체명', '메인키워드', '총타수', '단가', '시작일', '종료일', '남은일수', '등록일'].concat(isAdmin ? ['상태변경'] : []).map((h) => (
+                {['번호', '상품', '상태', '아이디', '업체명', '메인키워드', '총타수', '단가', '금액', '시작일', '종료일', '남은일수', '등록일'].concat(isAdmin ? ['상태변경'] : []).map((h) => (
                   <th key={h} style={thStyle}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {rows.length === 0 && !loading && (
-                <tr><td colSpan={13} style={styles.empty}>
+                <tr><td colSpan={14} style={styles.empty}>
                   <div style={{ display: 'flex', justifyContent: 'center', color: colors.textFaint, marginBottom: 10 }}><IconInbox size={40} /></div>
                   아직 생성된 캠페인이 없습니다.
                   <div><button style={{ ...btnPrimary, marginTop: 12 }} onClick={() => navigate('/accounts')}>계정관리로 가기</button></div>
@@ -108,7 +108,8 @@ export default function CampaignManage() {
                   <td style={tdStyle}>{c.place_name || <span style={{ color: colors.textFaint }}>미입력</span>}</td>
                   <td style={tdStyle}>{c.keyword_main || '-'}</td>
                   <td style={tdStyle}>{(c.total_ta ?? 0).toLocaleString()}</td>
-                  <td style={tdStyle}>{c.unit_price != null ? `${c.unit_price.toLocaleString()}원` : '-'}</td>
+                  <td style={tdStyle}>{c.unit_price != null ? `${c.unit_price.toLocaleString()}원/타` : '-'}</td>
+                  <td style={{ ...tdStyle, fontWeight: 600 }}>{c.unit_price != null ? `${(c.unit_price * (c.total_ta ?? 0)).toLocaleString()}원` : '-'}</td>
                   <td style={tdStyle}>{c.start_date || '-'}</td>
                   <td style={tdStyle}>{c.end_date || '-'}</td>
                   <td style={tdStyle}>{daysLeft(c.end_date)}</td>
