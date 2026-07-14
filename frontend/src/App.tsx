@@ -11,6 +11,7 @@ import CampaignManage from './pages/CampaignManage';
 import ProductCampaign from './pages/ProductCampaign';
 import CampaignDetail from './pages/CampaignDetail';
 import LogManage from './pages/LogManage';
+import Guide from './pages/Guide';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const token = useAuthStore((s) => s.accessToken);
@@ -58,6 +59,7 @@ export default function App() {
         <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
           <Route index element={<Navigate to="/campaigns" replace />} />
           <Route path="notice" element={<Notice />} />
+          <Route path="guide" element={<Guide />} />
           <Route path="accounts" element={
             <RoleRoute roles={['admin', 'distributor']}><AccountManage /></RoleRoute>
           } />

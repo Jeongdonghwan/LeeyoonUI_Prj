@@ -18,11 +18,13 @@ const icons = {
   logs: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z|M14 2v6h6|M16 13H8|M16 17H8',
   logout: 'M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4|M16 17l5-5-5-5|M21 12H9',
   star: 'M12 2l2.4 7.4H22l-6 4.6 2.3 7.4L12 17l-6.3 4.4L8 14 2 9.4h7.6z',
+  guide: 'M4 19.5A2.5 2.5 0 0 1 6.5 17H20|M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z',
 };
 
 type MenuRole = Role;
 const topMenus: { path: string; label: string; icon: string; roles: MenuRole[] }[] = [
   { path: '/notice', label: '공지사항', icon: icons.notice, roles: ['admin', 'distributor', 'agency', 'user'] },
+  { path: '/guide', label: '사용방법', icon: icons.guide, roles: ['admin', 'distributor', 'agency', 'user'] },
   { path: '/accounts', label: '계정관리', icon: icons.accounts, roles: ['admin', 'distributor'] },
 ];
 
