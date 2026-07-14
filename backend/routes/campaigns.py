@@ -177,6 +177,42 @@ def get_campaign(campaign_id):
         return jsonify({'error': 'INTERNAL_ERROR', 'message': str(e)}), 500
 
 
+def register_campaign(data, owner_id, created_by, days=None):
+    """캠페인 등록 공유 로직. 내부(JWT) 라우트와 외부(API 키) 라우트가 함께 사용.
+
+    검증·총타수 계산·insert·일자별 저장·로그 기록·상태 강제(pending)를 한 곳에서 처리.
+    반환: (campaign_id, None) 성공 / (None, error_message) 검증 실패.
+    """
+    data['user_id'] = owner_id
+    if not data.get('place_name') and not data.get('keyword_main'):
+        return None, '업체명 또는 메인키워드는 필수입니다.'
+    data.setdefault('product_type', 'bdc1')
+    if data['product_type'] not in PRODUCTS:
+        return None, '유효하지 않은 상품 코드입니다. (bdc1 / bdc2 / bdc3 / bdcnav)'
+    verr = _validate_content(data)
+    if verr:
+        return None, verr
+
+    data['created_by'] = created_by
+    _ensure_end_date(data)
+    data['total_ta'] = _compute_total(data, days)
+    data['status'] = 'pending'  # 등록 시 무조건 대기 → 관리자 승인 필요
+
+    campaign_id = CampaignModel.create(data)
+    if days:
+        CampaignDayModel.replace_for_campaign(campaign_id, days)
+
+    with get_cursor() as (cursor, conn):
+        cursor.execute(
+            "INSERT INTO campaign_logs (type, user_id, campaign_id, modified_by, product_type, total_ta, period_days) "
+            "VALUES (%s, %s, %s, %s, %s, %s, %s)",
+            ('등록', data['user_id'], campaign_id, created_by, data['product_type'],
+             data['total_ta'], data.get('run_days') or 0)
+        )
+        conn.commit()
+    return campaign_id, None
+
+
 @campaigns_bp.route('/', methods=['POST'])
 @require_roles('admin', 'distributor', 'agency', 'user')
 def create_campaign():
@@ -185,35 +221,17 @@ def create_campaign():
         data = request.get_json() or {}
         days = data.pop('days', None)
 
-        # 광고주/대행사는 본인 것만 등록 가능
+        # 광고주/대행사는 본인 것만 등록 가능. 그 외는 body 의 user_id 사용.
         if current['role'] in LEAF_ROLES:
-            data['user_id'] = current['id']
-        if not data.get('user_id'):
-            return jsonify({'error': 'VALIDATION_ERROR', 'message': '사용자를 선택해주세요.'}), 400
-        if not data.get('place_name') and not data.get('keyword_main'):
-            return jsonify({'error': 'VALIDATION_ERROR', 'message': '업체명 또는 메인키워드는 필수입니다.'}), 400
-        verr = _validate_content(data)
-        if verr:
-            return jsonify({'error': 'VALIDATION_ERROR', 'message': verr}), 400
+            owner_id = current['id']
+        else:
+            owner_id = data.get('user_id')
+            if not owner_id:
+                return jsonify({'error': 'VALIDATION_ERROR', 'message': '사용자를 선택해주세요.'}), 400
 
-        data['created_by'] = current['id']
-        data.setdefault('product_type', 'bdc1')
-        _ensure_end_date(data)
-        data['total_ta'] = _compute_total(data, days)
-        data['status'] = 'pending'  # 등록 시 무조건 대기 → 관리자 승인 필요
-
-        campaign_id = CampaignModel.create(data)
-        if days:
-            CampaignDayModel.replace_for_campaign(campaign_id, days)
-
-        with get_cursor() as (cursor, conn):
-            cursor.execute(
-                "INSERT INTO campaign_logs (type, user_id, campaign_id, modified_by, product_type, total_ta, period_days) "
-                "VALUES (%s, %s, %s, %s, %s, %s, %s)",
-                ('등록', data['user_id'], campaign_id, current['id'], data['product_type'],
-                 data['total_ta'], data.get('run_days') or 0)
-            )
-            conn.commit()
+        campaign_id, err = register_campaign(data, owner_id, current['id'], days)
+        if err:
+            return jsonify({'error': 'VALIDATION_ERROR', 'message': err}), 400
 
         return jsonify({'success': True, 'data': {'id': campaign_id}, 'message': '캠페인이 등록되었습니다.'}), 201
     except Exception as e:

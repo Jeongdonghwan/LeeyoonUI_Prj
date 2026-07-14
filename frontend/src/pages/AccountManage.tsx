@@ -1,7 +1,8 @@
 import { useState, useEffect, type FormEvent } from 'react';
 import { getUsers, createUser, updateUser, deleteUser, addCampaignQuantity } from '../api/users';
+import { issueApiKey, listApiKeys, revokeApiKey } from '../api/apiKeys';
 import { useAuthStore } from '../store/authStore';
-import type { User } from '../types';
+import type { User, ApiKey } from '../types';
 import Modal from '../components/common/Modal';
 import Pagination from '../components/common/Pagination';
 import {
@@ -27,6 +28,11 @@ export default function AccountManage() {
   const [editOpen, setEditOpen] = useState(false);
   const [editForm, setEditForm] = useState({ id: 0, username: '', password: '', role: 'user', company: '', memo: '' });
   const [editPrices, setEditPrices] = useState<Record<string, number | ''>>({ bdc1: '', bdc2: '', bdc3: '', bdcnav: '' });
+
+  const isAdmin = currentUser?.role === 'admin';
+  const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
+  const [keyLabel, setKeyLabel] = useState('');
+  const [newRawKey, setNewRawKey] = useState('');
 
   const [qtyOpen, setQtyOpen] = useState(false);
   const [qtyTarget, setQtyTarget] = useState<{ id: number; username: string }>({ id: 0, username: '' });
@@ -68,7 +74,30 @@ export default function AccountManage() {
     setEditForm({ id: u.id, username: u.username, password: '', role: u.role, company: u.company || '', memo: u.memo || '' });
     const p = u.prices || {};
     setEditPrices({ bdc1: p.bdc1 ?? '', bdc2: p.bdc2 ?? '', bdc3: p.bdc3 ?? '', bdcnav: p.bdcnav ?? '' });
+    setApiKeys([]); setKeyLabel(''); setNewRawKey('');
     setEditOpen(true);
+    if (isAdmin) loadKeys(u.id);
+  };
+  const loadKeys = async (userId: number) => {
+    try { const res = await listApiKeys(userId); setApiKeys(res.data.data); }
+    catch { /* 키 목록 실패는 조용히 무시 */ }
+  };
+  const handleIssueKey = async () => {
+    try {
+      const res = await issueApiKey(editForm.id, keyLabel.trim() || undefined);
+      setNewRawKey(res.data.data.raw_key);
+      setKeyLabel('');
+      loadKeys(editForm.id);
+    } catch (err: any) { toast.error(err.response?.data?.message || 'API 키 발급 실패'); }
+  };
+  const handleRevokeKey = async (id: number) => {
+    if (!confirm('이 API 키를 폐기하시겠습니까? 폐기 후에는 사용할 수 없습니다.')) return;
+    try { await revokeApiKey(id); toast.success('API 키를 폐기했습니다.'); loadKeys(editForm.id); }
+    catch { toast.error('폐기 실패'); }
+  };
+  const copyKey = async () => {
+    try { await navigator.clipboard.writeText(newRawKey); toast.success('API 키를 복사했습니다.'); }
+    catch { toast.error('복사 실패 — 수동으로 선택해 복사하세요.'); }
   };
   const handleEdit = async (e: FormEvent) => {
     e.preventDefault();
@@ -218,6 +247,52 @@ export default function AccountManage() {
               ))}
             </div>
           </div>
+
+          {isAdmin && (
+            <div style={{ marginTop: 16, paddingTop: 14, borderTop: `1px solid ${colors.border}` }}>
+              <label style={{ ...labelStyle, marginBottom: 8 }}>API 키 (외부 사이트 연동)</label>
+              <p style={{ fontSize: 12, color: colors.textMuted, marginTop: 0, marginBottom: 10 }}>
+                이 계정으로 외부 사이트가 캠페인을 등록할 수 있는 키입니다. 등록분은 이 계정 소유로 귀속됩니다.
+              </p>
+
+              {newRawKey && (
+                <div style={{ background: '#fffbe6', border: '1px solid #f0d97a', borderRadius: 8, padding: 12, marginBottom: 12 }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: '#8a6d00', marginBottom: 6 }}>
+                    ⚠ 이 키는 지금만 확인할 수 있습니다. 안전한 곳에 복사해두세요.
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    <input readOnly value={newRawKey} onFocus={(e) => e.target.select()}
+                      style={{ ...inputStyle, fontFamily: 'monospace', fontSize: 12, background: '#fff' }} />
+                    <button type="button" onClick={copyKey} style={{ ...btnSm, ...btnSecondary, flexShrink: 0 }}>복사</button>
+                  </div>
+                </div>
+              )}
+
+              {apiKeys.length > 0 && (
+                <div style={{ marginBottom: 10 }}>
+                  {apiKeys.map((k) => (
+                    <div key={k.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0', borderBottom: `1px solid ${colors.border}` }}>
+                      <span style={{ fontFamily: 'monospace', fontSize: 12, color: k.active ? colors.text : colors.textFaint }}>{k.key_prefix}…</span>
+                      {k.label && <span style={{ fontSize: 12, color: colors.textMuted }}>{k.label}</span>}
+                      <span style={{ fontSize: 11, color: colors.textFaint, marginLeft: 'auto' }}>
+                        {k.active ? (k.last_used_at ? `최근 ${k.last_used_at.slice(0, 10)}` : '미사용') : '폐기됨'}
+                      </span>
+                      {k.active === 1 && (
+                        <button type="button" onClick={() => handleRevokeKey(k.id)} style={{ ...btnSm, color: colors.danger, background: 'transparent', border: `1px solid ${colors.danger}` }}>폐기</button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div style={{ display: 'flex', gap: 8 }}>
+                <input style={{ ...inputStyle, flex: 1 }} placeholder="메모 (예: OO사이트 연동)" value={keyLabel}
+                  onChange={(e) => setKeyLabel(e.target.value)} />
+                <button type="button" onClick={handleIssueKey} style={{ ...btnSecondary, flexShrink: 0 }}>키 발급</button>
+              </div>
+            </div>
+          )}
+
           <Footer onCancel={() => setEditOpen(false)} submitLabel="수정" />
         </form>
       </Modal>

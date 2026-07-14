@@ -106,6 +106,21 @@ CREATE TABLE IF NOT EXISTS user_prices (
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
+-- ============================================================
+-- 외부 연동 API 키 — 키 하나 = 계정 하나. 원본키는 SHA-256 해시만 저장
+-- ============================================================
+CREATE TABLE IF NOT EXISTS api_keys (
+  id           INT AUTO_INCREMENT PRIMARY KEY,
+  user_id      INT NOT NULL,                 -- 이 키가 귀속되는 계정(소유자)
+  key_hash     CHAR(64) NOT NULL UNIQUE,     -- 원본키 SHA-256 hex (원본은 저장 안 함)
+  key_prefix   VARCHAR(20) NOT NULL,         -- 식별용 접두 (예: bdc_live_a1b2c3)
+  label        VARCHAR(100) NULL,            -- 메모(어느 사이트용인지)
+  active       TINYINT(1) NOT NULL DEFAULT 1,
+  last_used_at DATETIME NULL,
+  created_at   DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
 -- 기본 admin 계정 (비밀번호: admin1234)
 INSERT IGNORE INTO users (username, password_hash, role) VALUES
 ('admin', '$2b$12$K7zzp9KQOOVgSqW6rmvNfePmAAE3AJCetnFtZmb0VVGbx0hn7Bf0G', 'admin');

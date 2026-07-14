@@ -124,3 +124,12 @@ export interface PaginationParams {
   page: number;
   per_page: number;
 }
+
+export interface ApiKey {
+  id: number;
+  key_prefix: string;
+  label: string | null;
+  active: number;
+  last_used_at: string | null;
+  created_at: string;
+}

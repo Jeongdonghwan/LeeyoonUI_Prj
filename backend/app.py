@@ -7,6 +7,8 @@ from routes.users import users_bp
 from routes.campaigns import campaigns_bp
 from routes.logs import logs_bp
 from routes.notices import notices_bp
+from routes.external import external_bp
+from routes.api_keys import api_keys_bp
 
 
 def create_app():
@@ -61,6 +63,8 @@ def create_app():
     app.register_blueprint(campaigns_bp)
     app.register_blueprint(logs_bp)
     app.register_blueprint(notices_bp)
+    app.register_blueprint(external_bp)
+    app.register_blueprint(api_keys_bp)
 
     # 헬스체크
     @app.route('/api/health')
