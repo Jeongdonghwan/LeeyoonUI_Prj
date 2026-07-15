@@ -174,19 +174,27 @@ export default function AccountManage() {
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead><tr>
               <th style={thStyle}><input type="checkbox" checked={selected.length === users.length && users.length > 0} onChange={toggleAll} /></th>
-              {['번호', '아이디', '권한', '총판', '대행사', '광고주', '회사명', '캠페인', '메모', '정보수정', '계정등록'].map((h) => <th key={h} style={thStyle}>{h}</th>)}
+              {['번호', '아이디', '권한', '소속(상위)', '총판', '대행사', '광고주', '회사명', '캠페인', '메모', '정보수정', '계정등록'].map((h) => <th key={h} style={thStyle}>{h}</th>)}
             </tr></thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={12} style={{ ...tdStyle, textAlign: 'center', padding: 40 }}>로딩 중...</td></tr>
+                <tr><td colSpan={13} style={{ ...tdStyle, textAlign: 'center', padding: 40 }}>로딩 중...</td></tr>
               ) : users.length === 0 ? (
-                <tr><td colSpan={12} style={{ ...tdStyle, textAlign: 'center', padding: 40, color: colors.textMuted }}>데이터가 없습니다.</td></tr>
+                <tr><td colSpan={13} style={{ ...tdStyle, textAlign: 'center', padding: 40, color: colors.textMuted }}>데이터가 없습니다.</td></tr>
               ) : users.map((u) => (
                 <tr key={u.id}>
                   <td style={tdStyle}><input type="checkbox" checked={selected.includes(u.id)} onChange={() => toggleSelect(u.id)} /></td>
                   <td style={tdStyle}>{u.id}</td>
                   <td style={{ ...tdStyle, fontWeight: 600 }}>{u.username}</td>
                   <td style={tdStyle}><span style={{ ...badgeBase, background: ROLE_META[u.role].bg, color: ROLE_META[u.role].fg }}>{ROLE_META[u.role].label}</span></td>
+                  <td style={tdStyle}>
+                    {u.parent_username ? (
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                        {u.parent_role && <span style={{ ...badgeBase, fontSize: 11, background: ROLE_META[u.parent_role].bg, color: ROLE_META[u.parent_role].fg }}>{ROLE_META[u.parent_role].label}</span>}
+                        <span style={{ fontWeight: 600 }}>{u.parent_username}</span>
+                      </span>
+                    ) : <span style={{ color: colors.textFaint }}>최상위</span>}
+                  </td>
                   <td style={tdStyle}>{u.sub_distributor || '-'}</td>
                   <td style={tdStyle}>{u.sub_agency || '-'}</td>
                   <td style={tdStyle}>{u.sub_user || '-'}</td>

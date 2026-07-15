@@ -37,7 +37,7 @@ def get_users():
 
             cursor.execute(
                 f"SELECT u.id, u.username, u.role, u.parent_id, "
-                f"p.username AS parent_username, u.company, u.memo, u.created_at, "
+                f"p.username AS parent_username, p.role AS parent_role, u.company, u.memo, u.created_at, "
                 f"(SELECT COUNT(*) FROM users s WHERE s.parent_id = u.id AND s.role='distributor') AS sub_distributor, "
                 f"(SELECT COUNT(*) FROM users s WHERE s.parent_id = u.id AND s.role='agency') AS sub_agency, "
                 f"(SELECT COUNT(*) FROM users s WHERE s.parent_id = u.id AND s.role='user') AS sub_user, "

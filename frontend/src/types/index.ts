@@ -8,6 +8,7 @@ export interface User {
   role: Role;
   parent_id: number | null;
   parent_username: string | null;
+  parent_role: Role | null;
   company: string | null;
   memo: string | null;
   created_at: string;
