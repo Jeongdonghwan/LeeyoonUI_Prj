@@ -248,7 +248,11 @@ export default function ProductCampaign() {
   };
 
   const handleTemplate = async () => { const res = await downloadCampaignTemplate(pt); saveBlob(res.data, `${meta.label}_양식.xlsx`); };
-  const handleExport = async () => { const res = await exportCampaigns(pt); saveBlob(res.data, `${meta.label}_목록.xlsx`); };
+  const handleExport = async () => {
+    const ids = selected.length ? selected : undefined;
+    const res = await exportCampaigns(pt, ids);
+    saveBlob(res.data, `${meta.label}_${ids ? `선택${ids.length}건` : '목록'}.xlsx`);
+  };
   const submitUpload = async () => {
     const targetUser = isLeaf ? user?.id : (uploadUser || null);
     if (!targetUser) return toast.error('광고주를 선택해주세요.');
@@ -287,7 +291,7 @@ export default function ProductCampaign() {
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
             <button style={btnSecondary} onClick={handleTemplate}>엑셀 양식</button>
-            <button style={btnSecondary} onClick={handleExport}>엑셀 다운로드</button>
+            <button style={btnSecondary} onClick={handleExport}>{selected.length ? `엑셀 다운로드 (${selected.length}건)` : '엑셀 다운로드'}</button>
             <button style={btnSecondary} onClick={() => setUploadOpen(true)}>엑셀 업로드</button>
             <button style={{ ...btnPrimary, display: 'inline-flex', alignItems: 'center', gap: 5 }} onClick={openReg}><IconPlus size={13} color="#fff" /> 캠페인 등록</button>
           </div>

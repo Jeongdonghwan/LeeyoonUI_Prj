@@ -547,8 +547,11 @@ def export_excel():
         if product_type not in PRODUCTS:
             product_type = 'bdc1'
         user_id, created_by = _scope_for(current)
+        # 선택 다운로드: ids=1,2,3 이 있으면 해당 캠페인만
+        ids_param = (request.args.get('ids') or '').strip()
+        ids = [int(i) for i in ids_param.split(',') if i.strip().isdigit()] if ids_param else None
         rows, _ = CampaignModel.get_list(user_id=user_id, created_by=created_by,
-                                         product_type=product_type, per_page=10000)
+                                         product_type=product_type, ids=ids, per_page=10000)
         _stringify(rows)
         days_map = {}
         if PRODUCTS[product_type]['format'] == 'B':

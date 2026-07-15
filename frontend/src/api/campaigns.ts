@@ -54,8 +54,11 @@ export const uploadCampaignExcel = (file: File, productType: ProductType, userId
 export const downloadCampaignTemplate = (productType: ProductType) =>
   api.get('/campaigns/excel-template', { params: { product_type: productType }, responseType: 'blob' });
 
-export const exportCampaigns = (productType: ProductType) =>
-  api.get('/campaigns/excel-export', { params: { product_type: productType }, responseType: 'blob' });
+export const exportCampaigns = (productType: ProductType, ids?: number[]) =>
+  api.get('/campaigns/excel-export', {
+    params: { product_type: productType, ids: ids && ids.length ? ids.join(',') : undefined },
+    responseType: 'blob',
+  });
 
 // 접수 양식(채워진 시트) 다운로드 — ids 또는 product_type+날짜범위
 export const exportCampaignsIntake = (body: { ids?: number[]; product_type?: ProductType; start_date?: string; end_date?: string }) =>
